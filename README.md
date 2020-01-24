@@ -10,6 +10,13 @@ language.
 Millions of people learned to program with 101 BASIC Computer Games,
 BASIC Computer Games and More BASIC Computer Games. This collection of
 Rust games is a tribute to that era. It is also be a practical way to begin
-learning computer science, or the Rust language.
+learning computer science or the Rust language.
 
 All of these games are console games. No mouse. No graphics. No distractions.
+
+## Prerequisites
+
+Rust. Any platform. Any editor. Any console.
+If you can run "Hello World!" then you are good to go.
+<br/>https://www.rust-lang.org/learn/get-started
+<br/>https://en.wikipedia.org/wiki/%22Hello,_World!%22_program
