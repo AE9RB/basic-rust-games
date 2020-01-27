@@ -9,7 +9,7 @@ language.
 
 Millions of people learned to program with 101 BASIC Computer Games,
 BASIC Computer Games and More BASIC Computer Games. This collection of
-Rust games is a tribute to that era. It is also be a practical way to begin
+Rust games is a tribute to that era. It is also a practical way to begin
 learning computer science or the Rust language.
 
 All of these games are console games. No mouse. No graphics. No distractions.
