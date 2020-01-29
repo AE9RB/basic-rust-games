@@ -1,7 +1,7 @@
+use std::cmp::Ordering;
+use std::fmt;
 use std::io;
 use std::io::Write;
-use std::fmt;
-use std::cmp::Ordering;
 
 extern crate rand;
 use rand::Rng;
@@ -31,7 +31,7 @@ impl fmt::Display for Card {
                 12 => write!(f, "[Queen]"),
                 13 => write!(f, "[King]"),
                 14 => write!(f, "[Ace]"),
-                _ => write!(f, "[{}]", self.rank)
+                _ => write!(f, "[{}]", self.rank),
             }
         } else {
             write!(f, "[???]")
@@ -52,16 +52,14 @@ impl PartialEq for Card {
 }
 
 struct Hand {
-    cards: [Card; 3]
+    cards: [Card; 3],
 }
 
 impl Hand {
     fn new() -> Self {
-        Hand {cards: [
-            Card::new(true),
-            Card::new(true),
-            Card::new(false),
-        ]}
+        Hand {
+            cards: [Card::new(true), Card::new(true), Card::new(false)],
+        }
     }
     fn is_winner(&mut self) -> bool {
         self.cards[2].turn_over();
@@ -92,7 +90,7 @@ fn main() {
 }
 
 fn game() {
-    let mut wallet:u32 = 100;
+    let mut wallet: u32 = 100;
     loop {
         let mut hand = Hand::new();
         println!();
@@ -103,11 +101,11 @@ fn game() {
             let bet = bet();
             if bet > wallet {
                 println!("You don't have that much.");
-                continue
+                continue;
             }
             if bet == 0 {
                 println!("Chicken.");
-                break
+                break;
             }
             if hand.is_winner() {
                 println!("You win!: {}", hand);
@@ -116,24 +114,26 @@ fn game() {
                 println!("You lose: {}", hand);
                 wallet -= bet;
             }
-            break
+            break;
         }
 
         if wallet <= 0 {
             println!("You are out of coins.");
             println!("Goodbye.");
             println!();
-            break
+            break;
         }
     }
 }
 
-fn bet() -> u32  {
+fn bet() -> u32 {
     loop {
         print!("Your Bet? ");
         io::stdout().flush().unwrap();
         let mut bet = String::new();
-        io::stdin().read_line(&mut bet).expect("Failed to read line");
+        io::stdin()
+            .read_line(&mut bet)
+            .expect("Failed to read line");
         let bet = bet.trim().parse::<u32>();
         match bet {
             Ok(bet) => return bet,
