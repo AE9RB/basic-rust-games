@@ -12,13 +12,13 @@ You lose when you can no longer make a move.
 You lose when the computer reaches the third rank.
 
 ```
-+---+---+---+
-| B | B | B |
-+---+---+---+
-|   |   |   |
-+---+---+---+
-| W | W | W |
-+---+---+---+
++---+---+---+   +---+---+---+
+| X | X | X |   | 7 | 8 | 9 |
++---+---+---+   +---+---+---+
+|   |   |   |   | 4 | 5 | 6 |
++---+---+---+   +---+---+---+
+| O | O | O |   | 1 | 2 | 3 |
++---+---+---+   +---+---+---+
 ```
 
 The rules for an AI like this are very straightforward.
