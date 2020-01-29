@@ -38,7 +38,7 @@ macro_rules! BOARD {
     };
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 struct Move {
     from: u8,
     to: u8,
@@ -171,6 +171,22 @@ impl Board {
         self[mov.to] = self[mov.from];
         self[mov.from] = Cell::Empty;
     }
+    fn black_promoted(&self) -> bool {
+        for i in 1..=3 {
+            if self[i] == Cell::Black {
+                return true;
+            }
+        }
+        false
+    }
+    fn white_promoted(&self) -> bool {
+        for i in 7..=9 {
+            if self[i] == Cell::White {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 impl fmt::Display for Board {
@@ -207,24 +223,68 @@ fn main() {
     println!(" *  H E X A P A W N  *");
     println!(" *********************");
     println!();
-    println!(BOARD!(), 7, 8, 9, 4, 5, 6, 1, 2, 3);
+    print!(BOARD!(), 7, 8, 9, 4, 5, 6, 1, 2, 3);
+    println!("It's your pawns against mine.");
+    println!("The board is numbered like a calculator.");
+    println!("You lose when you can no longer make a move.");
+    println!("You lose when I reach the third rank.");
+    println!("You go first.");
+    println!();
 
     let mut brain = Brain::new();
-    let mut board = Board::new();
-    println!("{}", board);
+    let mut black_wins = 0;
+    let mut white_wins = 0;
+    loop {
+        let mut history: Vec<(Board, Move)> = Vec::new();
+        let mut board = Board::new();
 
-    let mov = read_move(&board);
-    board.do_move(&mov);
-    println!("{}", board);
+        loop {
+            println!("{}", board);
 
-    let mov = brain.get(&board).choose(&mut thread_rng()).unwrap();
-    board.do_move(&mov);
-    println!("I move: {}\n{}", mov, board);
+            let white_moves = board.white_moves();
+            if white_moves.is_empty() || board.black_promoted() {
+                println!("Black wins!");
+                black_wins += 1;
+                break;
+            }
+
+            let mov = read_move(&white_moves);
+            board.do_move(&mov);
+            println!("{}", board);
+
+            let black_moves = board.black_moves();
+            if black_moves.is_empty() || board.white_promoted() {
+                println!("White wins!");
+                white_wins += 1;
+                loop {
+                    let (b, m) = history.pop().unwrap();
+                    let mvs = brain.get(&b);
+                    mvs.retain(|&mm| mm != m);
+                    if !mvs.is_empty() {
+                        break
+                    }
+                }
+                break;
+            }
+
+            let mov = brain.get(&board).choose(&mut thread_rng()).unwrap();
+            history.push((board,*mov));
+            board.do_move(&mov);
+            println!("I move: {}", mov);
+        }
+
+        println!();
+        println!("Black has {} wins. You have {} wins.", black_wins, white_wins);
+        if black_wins > white_wins {
+            println!("The student has become the master.");
+        } else {
+            println!("Teach me senpai. Let's go again.");
+        }
+        println!();
+    }
 }
 
-fn read_move(board: &Board) -> Move {
-    println!();
-    let white_moves = board.white_moves();
+fn read_move(moves: &Vec<Move>) -> Move {
     loop {
         print!("Your move? ");
         io::stdout().flush().unwrap();
@@ -237,7 +297,7 @@ fn read_move(board: &Board) -> Move {
             if let Ok(f) = vec[0].trim().parse::<u8>() {
                 if let Ok(t) = vec[1].trim().parse::<u8>() {
                     let mov = Move { from: f, to: t };
-                    if white_moves.iter().any(|m| mov == *m) {
+                    if moves.iter().any(|m| mov == *m) {
                         return mov;
                     }
                     println!("Invalid move");
