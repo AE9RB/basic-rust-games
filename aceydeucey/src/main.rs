@@ -1,68 +1,70 @@
-use std::cmp::Ordering;
 use std::fmt;
 use std::io;
 use std::io::Write;
 
 extern crate rand;
-use rand::Rng;
+use rand::prelude::*;
 
+#[derive(PartialOrd, PartialEq)]
 struct Card {
     rank: u8,
-    revealed: bool,
-}
-
-impl Card {
-    fn new(revealed: bool) -> Self {
-        Card {
-            rank: rand::thread_rng().gen_range(2, 15),
-            revealed,
-        }
-    }
-    fn turn_over(&mut self) {
-        self.revealed = !self.revealed;
-    }
 }
 
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.revealed {
-            match self.rank {
-                11 => write!(f, "[Jack]"),
-                12 => write!(f, "[Queen]"),
-                13 => write!(f, "[King]"),
-                14 => write!(f, "[Ace]"),
-                _ => write!(f, "[{}]", self.rank),
-            }
-        } else {
-            write!(f, "[???]")
+        match self.rank {
+            11 => write!(f, "[Jack]"),
+            12 => write!(f, "[Queen]"),
+            13 => write!(f, "[King]"),
+            14 => write!(f, "[Ace]"),
+            _ => write!(f, "[{}]", self.rank),
         }
     }
 }
 
-impl PartialOrd for Card {
-    fn partial_cmp(&self, other: &Card) -> Option<Ordering> {
-        Some(self.rank.cmp(&other.rank))
-    }
+struct Deck {
+    cards: Vec<Card>,
 }
 
-impl PartialEq for Card {
-    fn eq(&self, other: &Card) -> bool {
-        self.rank == other.rank
+impl Deck {
+    fn new() -> Self {
+        Deck { cards: vec![] }
+    }
+    fn reset(&mut self) {
+        self.cards.truncate(0);
+        for r in 2..=15 {
+            for _s in 1..=4 {
+                self.cards.push(Card { rank: r });
+            }
+        }
+        self.cards.shuffle(&mut rand::thread_rng());
+    }
+    fn hand(&mut self) -> [Card; 3] {
+        if self.cards.len() < 10 {
+            self.reset();
+        }
+        [
+            self.cards.pop().unwrap(),
+            self.cards.pop().unwrap(),
+            self.cards.pop().unwrap(),
+        ]
     }
 }
 
 struct Hand {
     cards: [Card; 3],
+    revealed: bool,
 }
 
 impl Hand {
-    fn new() -> Self {
+    fn new(deck: &mut Deck) -> Self {
         Hand {
-            cards: [Card::new(true), Card::new(true), Card::new(false)],
+            cards: deck.hand(),
+            revealed: false,
         }
     }
     fn is_winner(&mut self) -> bool {
-        self.cards[2].turn_over();
+        self.revealed = true;
         if self.cards[0] < self.cards[1] {
             self.cards[2] > self.cards[0] && self.cards[2] < self.cards[1]
         } else {
@@ -73,7 +75,11 @@ impl Hand {
 
 impl fmt::Display for Hand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {} {}", self.cards[0], self.cards[1], self.cards[2])
+        if self.revealed {
+            write!(f, "{} {} {}", self.cards[0], self.cards[1], self.cards[2])
+        } else {
+            write!(f, "{} {} [???]", self.cards[0], self.cards[1])
+        }
     }
 }
 
@@ -91,8 +97,9 @@ fn main() {
 
 fn game() {
     let mut wallet: u32 = 100;
+    let mut deck = Deck::new();
     loop {
-        let mut hand = Hand::new();
+        let mut hand = Hand::new(&mut deck);
         println!();
         println!("You have {} coins.", wallet);
         println!("The deal: {}", hand);
