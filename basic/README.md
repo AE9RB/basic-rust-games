@@ -1,12 +1,13 @@
 # Extended BASIC 4.1+
 
 An implementation of Altair 8800 Extended BASIC Version 4.1 in Rust.
-Based on the third printing of the reference manual in 1977.
+Based on the reference manual from April 1977.
 This will run all programs from the microcomputer editions of
 BASIC Computer Games and More BASIC Computer Games.
 
 BASIC was created in a time when lowercase was rare, RAM was expensive,
-and CPUs were slow. Lines of code were tokenized with brute force; each position was simply checked against keywords that would collapse to a
+and CPUs were slow. Lines of code were tokenized with brute force; each
+position was simply checked against keywords that would collapse to a
 non-inputable character. The tokenized code was then executed by a parsing
 interpreter. As you might imagine, error reporting was not very helpful.
 

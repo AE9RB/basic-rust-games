@@ -50,6 +50,7 @@ impl<'a> Lex<'a> {
 
     fn number(&mut self) -> Option<Token> {
         let mut s = String::new();
+        let mut digits = 0;
         let mut decimal = false;
         let mut exp = false;
         loop {
@@ -57,12 +58,27 @@ impl<'a> Lex<'a> {
             if c == 'e' {
                 c = 'E'
             }
+            if c == 'd' {
+                c = 'D'
+            }
             s.push(c);
+            if !exp && Self::is_basic_digit(c) {
+                digits += 1;
+            }
+            if c == '.' {
+                decimal = true
+            }
+            if c == 'D' {
+                digits += 8;
+            }
+            if c == '!' {
+                return Some(Token::Single(s));
+            }
+            if c == '#' {
+                return Some(Token::Double(s));
+            }
             if let Some(p) = self.i.peek() {
-                if c == '.' {
-                    decimal = true
-                }
-                if c == 'E' {
+                if c == 'E' || c == 'D' {
                     exp = true;
                     if *p == '+' || *p == '-' {
                         continue;
@@ -71,17 +87,25 @@ impl<'a> Lex<'a> {
                 if Self::is_basic_digit(*p) {
                     continue;
                 }
-                if *p == '.' && decimal == false {
+                if !decimal && *p == '.' {
                     continue;
                 }
-                if *p == 'e' || *p == 'E' && exp == false {
+                if !exp && *p == 'E' || *p == 'e' || *p == 'D' || *p == 'd' {
+                    continue;
+                }
+                if *p == '!' || *p == '#' {
                     continue;
                 }
             }
-            if exp || decimal {
-                return Some(Token::Float(s));
+            if digits > 7 {
+                return Some(Token::Double(s));
             }
-            return Some(Token::Integer(s));
+            if !exp && !decimal {
+                if let Ok(_) = s.parse::<i16>() {
+                    return Some(Token::Integer(s));
+                }
+            }
+            return Some(Token::Single(s));
         }
     }
 
@@ -113,6 +137,12 @@ impl<'a> Lex<'a> {
             }
             if c == '$' {
                 return Some(Token::StringIdent(s));
+            }
+            if c == '!' {
+                return Some(Token::SingleIdent(s));
+            }
+            if c == '#' {
+                return Some(Token::DoubleIdent(s));
             }
             if c == '%' {
                 return Some(Token::IntegerIdent(s));
@@ -197,6 +227,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_numbers() {
+        let s = "3.141593".to_string();
+        assert_eq!(
+            Lex::new(&s).next().unwrap(),
+            Token::Single("3.141593".to_string())
+        );
+        let s = "3.1415926".to_string();
+        assert_eq!(
+            Lex::new(&s).next().unwrap(),
+            Token::Double("3.1415926".to_string())
+        );
+        let s = "32767".to_string();
+        assert_eq!(
+            Lex::new(&s).next().unwrap(),
+            Token::Integer("32767".to_string())
+        );
+        let s = "32768".to_string();
+        assert_eq!(
+            Lex::new(&s).next().unwrap(),
+            Token::Single("32768".to_string())
+        );
+        let s = "24e9".to_string();
+        assert_eq!(
+            Lex::new(&s).next().unwrap(),
+            Token::Single("24E9".to_string())
+        );
+    }
+
+    #[test]
     fn test_remark() {
         let s = String::from("100 REM A fortunate comment");
         let mut x = Lex::new(&s);
@@ -239,8 +298,8 @@ mod tests {
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Ident("IN".to_string()));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Float("0.".to_string()));
-        assert_eq!(x.next().unwrap(), Token::Float(".4".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Single("0.".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Single(".4".to_string()));
         assert_eq!(x.next(), None);
     }
 }
