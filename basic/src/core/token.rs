@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use std::fmt;
 
-//TODO remove #[allow(dead_code)] after lexer
-
 thread_local!(
     static TOKEN_TO_STRING: HashMap<Token, &'static str> = [
         // This would be better to #derive using fmt::Display
         // where completeness is checked by match.
+        (Token::ParenOpen, "("),
+        (Token::ParenClose, ")"),
+        (Token::Comma, ","),
+        (Token::Colon, ":"),
         (Token::Statement(Statement::Data), "DATA"),
         (Token::Statement(Statement::Def), "DEF"),
         (Token::Statement(Statement::Dim), "DIM"),
@@ -48,16 +50,18 @@ thread_local!(
         (Token::Function(Function::Tab), "TAB"),
         (Token::Function(Function::Tan), "TAN"),
         (Token::Function(Function::Val), "VAL"),
+        (Token::Operator(Operator::Equals), "="),
+        (Token::Operator(Operator::Plus), "+"),
+        (Token::Operator(Operator::Minus), "-"),
+        (Token::Operator(Operator::Multiply), "*"),
+        (Token::Operator(Operator::Divide), "/"),
+        (Token::Operator(Operator::Caret), "^"),
     ]
     .iter()
     .cloned()
     .collect();
-
     static STRING_TO_TOKEN: HashMap<&'static str, Token> =
         TOKEN_TO_STRING.with(|tts| tts.into_iter().map(|(t, &s)| (s, t.clone())).collect());
-
-    static MAX_TOKEN_LEN: usize =
-        TOKEN_TO_STRING.with(|tts| tts.into_iter().map(|(_, &s)| s.len()).max().unwrap());
 );
 
 pub fn token_to_str(t: &Token) -> Option<&str> {
@@ -74,47 +78,49 @@ pub fn str_to_token(s: &str) -> Option<Token> {
     })
 }
 
-pub fn max_token_len() -> usize {
-    MAX_TOKEN_LEN.with(|mts| *mts)
-}
-
-#[allow(dead_code)]
 #[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
 pub enum Token {
-    Eol,
     Whitespace(usize),
     Statement(Statement),
     Function(Function),
+    Operator(Operator),
     Ident(String),
     StringIdent(String),
     IntegerIdent(String),
-    Number(String),
+    Float(String),
+    Integer(String),
     String(String),
+    Unknown(String),
     ParenOpen,
     ParenClose,
+    Comma,
+    Colon,
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Token::Eol => write!(f, "\n"),
             Token::Whitespace(u) => {
                 write!(f, "{}", std::iter::repeat(" ").take(*u).collect::<String>())
             }
             Token::Statement(s) => write!(f, "{}", s),
             Token::Function(s) => write!(f, "{}", s),
+            Token::Operator(s) => write!(f, "{}", s),
             Token::Ident(s) => write!(f, "{}", s),
-            Token::StringIdent(s) => write!(f, "{}$", s),
-            Token::IntegerIdent(s) => write!(f, "{}%", s),
-            Token::Number(s) => write!(f, "{}", s),
-            Token::String(s) => write!(f, "{}", s),
+            Token::StringIdent(s) => write!(f, "{}", s),
+            Token::IntegerIdent(s) => write!(f, "{}", s),
+            Token::Float(s) => write!(f, "{}", s),
+            Token::Integer(s) => write!(f, "{}", s),
+            Token::String(s) => write!(f, "\"{}\"", s),
+            Token::Unknown(s) => write!(f, "{}", s),
             Token::ParenOpen => write!(f, "("),
             Token::ParenClose => write!(f, ")"),
+            Token::Comma => write!(f, ","),
+            Token::Colon => write!(f, ":"),
         }
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
 pub enum Statement {
     Data,
@@ -150,7 +156,6 @@ impl fmt::Display for Statement {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
 pub enum Function {
     Abs,
@@ -185,6 +190,26 @@ impl fmt::Display for Function {
     }
 }
 
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
+pub enum Operator {
+    Equals,
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    Caret,
+}
+
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let t = Token::Operator(self.clone());
+        TOKEN_TO_STRING.with(|tts| match tts.get(&t) {
+            Some(s) => write!(f, "{}", *s),
+            None => panic!("No string for Operator::{:?}", self),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,10 +229,5 @@ mod tests {
         assert_eq!(t, Some(Token::Statement(Statement::Rem)));
         let t = str_to_token("PICKLES");
         assert_eq!(t, None);
-    }
-
-    #[test]
-    fn test_max_token_len() {
-        assert_eq!(max_token_len(), 7); // RESTORE is longest
     }
 }
