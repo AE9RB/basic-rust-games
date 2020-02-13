@@ -132,7 +132,7 @@ impl<'a> Lex<'a> {
             if Self::is_basic_digit(c) {
                 digit = true;
             }
-            if let Some(t) = str_to_token(&s) {
+            if let Some(t) = Token::from_string(&s) {
                 return Some(t);
             }
             if c == '$' {
@@ -168,7 +168,7 @@ impl<'a> Lex<'a> {
         loop {
             if let Some(c) = self.i.next() {
                 s.push(c);
-                if let Some(t) = str_to_token(&s) {
+                if let Some(t) = Token::from_string(&s) {
                     return Some(t);
                 }
                 if let Some(p) = self.i.peek() {
