@@ -1,3 +1,6 @@
+extern crate macros;
+use macros::EnumIter;
+
 use std::collections::HashMap;
 use std::fmt;
 
@@ -78,7 +81,7 @@ pub fn str_to_token(s: &str) -> Option<Token> {
     })
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Token {
     Whitespace(usize),
     Statement(Statement),
@@ -125,7 +128,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Statement {
     Data,
     Def,
@@ -160,7 +163,7 @@ impl fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Function {
     Abs,
     Asc,
@@ -194,7 +197,7 @@ impl fmt::Display for Function {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Operator {
     Equals,
     Plus,
