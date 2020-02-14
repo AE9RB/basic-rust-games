@@ -16,10 +16,6 @@ abstract syntax tree (AST). Lex is run when a line is entered. Parse
 is done just in time. Execution is performed on the AST.
 This will feel just like real BASIC except with better errors.
 
-Rust has nice console input so there is no EDIT command.
-Supports UTF-8 in REM statements and quoted strings.
-String LEN returns the number of characters, not the number of graphemes.
-String length limit is 255 characters.
+Supports UTF-8 in REM statements and strings.
+String LEN returns the number of characters, not the number of graphemes or bytes.
 Code may be input as lowercase but will LIST as uppercase.
-Variable names can be any length and will not be truncated.
-Variable names may not start with keywords but may have keywords in them.

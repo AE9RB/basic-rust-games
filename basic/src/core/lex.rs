@@ -4,10 +4,11 @@ use core::iter::Peekable;
 pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
     remark: bool,
+    next_token: Option<Token>,
 }
 
 impl<'a> Lex<'a> {
-    pub fn new(s: &'a String) -> Lex {
+    pub fn new(s: &'a str) -> Lex {
         let mut t = s.len();
         if s.ends_with("\r\n") {
             t -= 2
@@ -19,6 +20,7 @@ impl<'a> Lex<'a> {
         Lex {
             i: s.chars().take(t).peekable(),
             remark: false,
+            next_token: None,
         }
     }
 
@@ -72,10 +74,10 @@ impl<'a> Lex<'a> {
                 digits += 8;
             }
             if c == '!' {
-                return Some(Token::Single(s));
+                return Some(Token::Literal(Literal::Single(s)));
             }
             if c == '#' {
-                return Some(Token::Double(s));
+                return Some(Token::Literal(Literal::Double(s)));
             }
             if let Some(p) = self.i.peek() {
                 if c == 'E' || c == 'D' {
@@ -98,14 +100,14 @@ impl<'a> Lex<'a> {
                 }
             }
             if digits > 7 {
-                return Some(Token::Double(s));
+                return Some(Token::Literal(Literal::Double(s)));
             }
             if !exp && !decimal {
                 if let Ok(_) = s.parse::<i16>() {
-                    return Some(Token::Integer(s));
+                    return Some(Token::Literal(Literal::Integer(s)));
                 }
             }
-            return Some(Token::Single(s));
+            return Some(Token::Literal(Literal::Single(s)));
         }
     }
 
@@ -119,7 +121,7 @@ impl<'a> Lex<'a> {
                     continue;
                 }
             }
-            return Some(Token::String(s));
+            return Some(Token::Literal(Literal::String(s)));
         }
     }
 
@@ -132,8 +134,10 @@ impl<'a> Lex<'a> {
             if Self::is_basic_digit(c) {
                 digit = true;
             }
-            if let Some(t) = Token::from_string(&s) {
-                return Some(t);
+            let (t1,t2) = Token::scan_string(&s);
+            if t1.is_some() {
+                self.next_token = t2;
+                return t1;
             }
             if c == '$' {
                 return Some(Token::StringIdent(s));
@@ -194,13 +198,16 @@ impl<'a> Iterator for Lex<'a> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.next_token.is_some() {
+            return self.next_token.take();
+        }
         let p = self.i.peek()?;
         if self.remark {
             let mut s = String::new();
             while let Some(c) = self.i.next() {
                 s.push(c);
             }
-            return Some(Token::String(s));
+            return Some(Token::Unknown(s));
         }
         if Self::is_basic_whitespace(*p) {
             return self.whitespace();
@@ -231,65 +238,71 @@ mod tests {
         let s = "3.141593".to_string();
         assert_eq!(
             Lex::new(&s).next().unwrap(),
-            Token::Single("3.141593".to_string())
+            Token::Literal(Literal::Single("3.141593".to_string()))
         );
         let s = "3.1415926".to_string();
         assert_eq!(
             Lex::new(&s).next().unwrap(),
-            Token::Double("3.1415926".to_string())
+            Token::Literal(Literal::Double("3.1415926".to_string()))
         );
         let s = "32767".to_string();
         assert_eq!(
             Lex::new(&s).next().unwrap(),
-            Token::Integer("32767".to_string())
+            Token::Literal(Literal::Integer("32767".to_string()))
         );
         let s = "32768".to_string();
         assert_eq!(
             Lex::new(&s).next().unwrap(),
-            Token::Single("32768".to_string())
+            Token::Literal(Literal::Single("32768".to_string()))
         );
         let s = "24e9".to_string();
         assert_eq!(
             Lex::new(&s).next().unwrap(),
-            Token::Single("24E9".to_string())
+            Token::Literal(Literal::Single("24E9".to_string()))
         );
     }
 
     #[test]
     fn test_remark() {
-        let s = String::from("100 REM A fortunate comment");
-        let mut x = Lex::new(&s);
-        assert_eq!(x.next().unwrap(), Token::Integer("100".to_string()));
+        let mut x = Lex::new("100 REM A fortunate comment");
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("100".to_string())));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::Rem));
         assert_eq!(
             x.next().unwrap(),
-            Token::String(" A fortunate comment".to_string())
+            Token::Unknown(" A fortunate comment".to_string())
         );
         assert_eq!(x.next(), None);
     }
 
     #[test]
+    fn test_scanner() {
+        let mut x = Lex::new("BANDS");
+        assert_eq!(x.next().unwrap(), Token::Ident("B".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Operator(Operator::And));
+        assert_eq!(x.next().unwrap(), Token::Ident("S".to_string()));
+        assert_eq!(x.next(), None);
+    }
+
+    #[test]
     fn test_for_loop() {
-        let s = String::from("for i%=1to30-10");
-        let mut x = Lex::new(&s);
+        let mut x = Lex::new("for i%=1to30-10");
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::IntegerIdent("I%".to_string()));
         assert_eq!(x.next().unwrap(), Token::Operator(Operator::Equals));
-        assert_eq!(x.next().unwrap(), Token::Integer("1".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("1".to_string())));
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::To));
-        assert_eq!(x.next().unwrap(), Token::Integer("30".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("30".to_string())));
         assert_eq!(x.next().unwrap(), Token::Operator(Operator::Minus));
-        assert_eq!(x.next().unwrap(), Token::Integer("10".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("10".to_string())));
         assert_eq!(x.next(), None);
     }
 
     #[test]
     fn test_unknown() {
-        let s = String::from("10 fOr %woo in 0..4\n");
-        let mut x = Lex::new(&s);
-        assert_eq!(x.next().unwrap(), Token::Integer("10".to_string()));
+        let mut x = Lex::new("10 fOr %woo in 0..4\n");
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("10".to_string())));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
@@ -298,8 +311,8 @@ mod tests {
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Ident("IN".to_string()));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Single("0.".to_string()));
-        assert_eq!(x.next().unwrap(), Token::Single(".4".to_string()));
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Single("0.".to_string())));
+        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Single(".4".to_string())));
         assert_eq!(x.next(), None);
     }
 }

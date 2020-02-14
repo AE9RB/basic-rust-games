@@ -8,7 +8,6 @@ thread_local!(
     static STRING_TO_TOKEN: HashMap<std::string::String, Token> = Token::iter()
         .cloned()
         .chain(Statement::iter().map(|x| Token::Statement(x.clone())))
-        .chain(Function::iter().map(|x| Token::Function(x.clone())))
         .chain(Operator::iter().map(|x| Token::Operator(x.clone())))
         .map(|d| (d.to_string(), d))
         .collect();
@@ -16,20 +15,18 @@ thread_local!(
 
 #[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Token {
+    Unknown(String),
     Whitespace(usize),
+    Literal(Literal),
     Statement(Statement),
-    Function(Function),
     Operator(Operator),
+
     Ident(String),
     StringIdent(String),
     SingleIdent(String),
     DoubleIdent(String),
     IntegerIdent(String),
-    Single(String),
-    Double(String),
-    Integer(String),
-    String(String),
-    Unknown(String),
+
     ParenOpen,
     ParenClose,
     Comma,
@@ -43,25 +40,43 @@ impl Token {
             None => None,
         })
     }
+    pub fn scan_string(s: &str) -> (Option<Token>, Option<Token>) {
+        STRING_TO_TOKEN.with(|stt| {
+            let mut ret:(Option<Token>, Option<Token>) = (None,None);
+            let mut ident_len = s.len();
+            for (key_str,tok) in stt.iter() {
+                if s.ends_with(key_str) {
+                    let ident = &s[0..s.len()-key_str.len()];
+                    if ident.len() < ident_len {
+                        ident_len = ident.len();
+                        if ident.len() > 0 {
+                            ret = (Some(Token::Ident(ident.to_string())), Some(tok.clone()));
+                        } else {
+                            ret = (Some(tok.clone()), None);
+                        }
+                    }
+                }
+            }
+            return ret;
+        })
+    }
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Token::Unknown(s) => write!(f, "{}", s),
             Token::Whitespace(u) => write!(f, "{s:>w$}", s = "", w = u),
+            Token::Literal(s) => write!(f, "{}", s),
             Token::Statement(s) => write!(f, "{}", s),
-            Token::Function(s) => write!(f, "{}", s),
             Token::Operator(s) => write!(f, "{}", s),
+
             Token::Ident(s) => write!(f, "{}", s),
             Token::StringIdent(s) => write!(f, "{}", s),
             Token::SingleIdent(s) => write!(f, "{}", s),
             Token::DoubleIdent(s) => write!(f, "{}", s),
             Token::IntegerIdent(s) => write!(f, "{}", s),
-            Token::Single(s) => write!(f, "{}", s),
-            Token::Double(s) => write!(f, "{}", s),
-            Token::Integer(s) => write!(f, "{}", s),
-            Token::String(s) => write!(f, "\"{}\"", s),
-            Token::Unknown(s) => write!(f, "{}", s),
+
             Token::ParenOpen => write!(f, "("),
             Token::ParenClose => write!(f, ")"),
             Token::Comma => write!(f, ","),
@@ -69,6 +84,26 @@ impl fmt::Display for Token {
         }
     }
 }
+
+#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
+pub enum Literal {
+    Single(String),
+    Double(String),
+    Integer(String),
+    String(String),
+}
+
+impl fmt::Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Literal::Single(s) => write!(f, "{}", s),
+            Literal::Double(s) => write!(f, "{}", s),
+            Literal::Integer(s) => write!(f, "{}", s),
+            Literal::String(s) => write!(f, "\"{}\"", s),
+        }
+    }
+}
+
 
 #[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Statement {
@@ -124,64 +159,21 @@ impl fmt::Display for Statement {
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
-pub enum Function {
-    Abs,
-    Asc,
-    Atn,
-    ChrS,
-    Cos,
-    Exp,
-    Int,
-    LeftS,
-    Len,
-    Log,
-    MidS,
-    Rnd,
-    RightS,
-    Sgn,
-    Sin,
-    Sqr,
-    StrS,
-    Tab,
-    Tan,
-    Val,
-}
-
-impl fmt::Display for Function {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Function::Abs => write!(f, "ABS"),
-            Function::Asc => write!(f, "ASC"),
-            Function::Atn => write!(f, "ATN"),
-            Function::ChrS => write!(f, "CHR$"),
-            Function::Cos => write!(f, "COS"),
-            Function::Exp => write!(f, "EXP"),
-            Function::Int => write!(f, "INT"),
-            Function::LeftS => write!(f, "LEFT$"),
-            Function::Len => write!(f, "LEN"),
-            Function::Log => write!(f, "LOG"),
-            Function::MidS => write!(f, "MID$"),
-            Function::Rnd => write!(f, "RND"),
-            Function::RightS => write!(f, "RIGHT$"),
-            Function::Sgn => write!(f, "SGN"),
-            Function::Sin => write!(f, "SIN"),
-            Function::Sqr => write!(f, "SQR"),
-            Function::StrS => write!(f, "STR$"),
-            Function::Tab => write!(f, "TAB"),
-            Function::Tan => write!(f, "TAN"),
-            Function::Val => write!(f, "VAL"),
-        }
-    }
-}
-
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum Operator {
     Equals,
     Plus,
     Minus,
     Multiply,
     Divide,
+    DivideInt,
     Caret,
+    Modulus,
+    Not,
+    And,
+    Or,
+    Xor,
+    Eqv,
+    Imp,
 }
 
 impl fmt::Display for Operator {
@@ -192,7 +184,15 @@ impl fmt::Display for Operator {
             Operator::Minus => write!(f, "-"),
             Operator::Multiply => write!(f, "*"),
             Operator::Divide => write!(f, "/"),
+            Operator::DivideInt => write!(f, "\\"),
             Operator::Caret => write!(f, "^"),
+            Operator::Modulus => write!(f, "MOD"),
+            Operator::Not => write!(f, "NOT"),
+            Operator::And => write!(f, "AND"),
+            Operator::Or => write!(f, "OR"),
+            Operator::Xor => write!(f, "XOR"),
+            Operator::Eqv => write!(f, "EQV"),
+            Operator::Imp => write!(f, "IMP"),
         }
     }
 }
@@ -202,10 +202,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_str_to_token() {
+    fn test_from_string() {
         let t = Token::from_string("REM");
         assert_eq!(t, Some(Token::Statement(Statement::Rem)));
         let t = Token::from_string("PICKLES");
         assert_eq!(t, None);
+    }
+
+    #[test]
+    fn test_scan_string() {
+        let t = Token::scan_string("BAND");
+        println!("{:?}", t);
+        assert_eq!(t, (Some(Token::Ident("B".to_string())), Some(Token::Operator(Operator::And))));
+        let t = Token::scan_string("FOR");
+        println!("{:?}", t);
+        assert_eq!(t, (Some(Token::Statement(Statement::For)), None));
     }
 }
