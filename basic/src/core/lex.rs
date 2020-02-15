@@ -134,22 +134,25 @@ impl<'a> Lex<'a> {
             if Self::is_basic_digit(c) {
                 digit = true;
             }
+            // Using Token::from_string here is faster and less confusing
+            // since it allows tokens in the Ident like BASIC-80.
+            // But then tokens need delimiters. e.g. "M AND Y" vs "MANDY"
             let (t1, t2) = Token::scan_string(&s);
             if t1.is_some() {
                 self.next_token = t2;
                 return t1;
             }
             if c == '$' {
-                return Some(Token::StringIdent(s));
+                return Some(Token::Ident(Ident::String(s)));
             }
             if c == '!' {
-                return Some(Token::SingleIdent(s));
+                return Some(Token::Ident(Ident::Single(s)));
             }
             if c == '#' {
-                return Some(Token::DoubleIdent(s));
+                return Some(Token::Ident(Ident::Double(s)));
             }
             if c == '%' {
-                return Some(Token::IntegerIdent(s));
+                return Some(Token::Ident(Ident::Integer(s)));
             }
             if let Some(p) = self.i.peek() {
                 if Self::is_basic_alphabetic(*p) {
@@ -164,7 +167,7 @@ impl<'a> Lex<'a> {
             }
             break;
         }
-        return Some(Token::Ident(s));
+        return Some(Token::Ident(Ident::Plain(s)));
     }
 
     fn minutia(&mut self) -> Option<Token> {
@@ -281,9 +284,15 @@ mod tests {
     #[test]
     fn test_scanner() {
         let mut x = Lex::new("BANDS");
-        assert_eq!(x.next().unwrap(), Token::Ident("B".to_string()));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Ident(Ident::Plain("B".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Operator(Operator::And));
-        assert_eq!(x.next().unwrap(), Token::Ident("S".to_string()));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Ident(Ident::Plain("S".to_string()))
+        );
         assert_eq!(x.next(), None);
     }
 
@@ -292,7 +301,10 @@ mod tests {
         let mut x = Lex::new("for i%=1to30-10");
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::IntegerIdent("I%".to_string()));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Ident(Ident::Integer("I%".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Operator(Operator::Equals));
         assert_eq!(
             x.next().unwrap(),
@@ -322,9 +334,15 @@ mod tests {
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Unknown("%".to_string()));
-        assert_eq!(x.next().unwrap(), Token::Ident("WOO".to_string()));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Ident(Ident::Plain("WOO".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Ident("IN".to_string()));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Ident(Ident::Plain("IN".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(
             x.next().unwrap(),

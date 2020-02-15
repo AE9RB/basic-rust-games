@@ -20,13 +20,7 @@ pub enum Token {
     Literal(Literal),
     Statement(Statement),
     Operator(Operator),
-
-    Ident(String),
-    StringIdent(String),
-    SingleIdent(String),
-    DoubleIdent(String),
-    IntegerIdent(String),
-
+    Ident(Ident),
     ParenOpen,
     ParenClose,
     Comma,
@@ -50,7 +44,10 @@ impl Token {
                     if ident.len() < ident_len {
                         ident_len = ident.len();
                         if ident.len() > 0 {
-                            ret = (Some(Token::Ident(ident.to_string())), Some(tok.clone()));
+                            ret = (
+                                Some(Token::Ident(Ident::Plain(ident.to_string()))),
+                                Some(tok.clone()),
+                            );
                         } else {
                             ret = (Some(tok.clone()), None);
                         }
@@ -70,13 +67,7 @@ impl fmt::Display for Token {
             Token::Literal(s) => write!(f, "{}", s),
             Token::Statement(s) => write!(f, "{}", s),
             Token::Operator(s) => write!(f, "{}", s),
-
             Token::Ident(s) => write!(f, "{}", s),
-            Token::StringIdent(s) => write!(f, "{}", s),
-            Token::SingleIdent(s) => write!(f, "{}", s),
-            Token::DoubleIdent(s) => write!(f, "{}", s),
-            Token::IntegerIdent(s) => write!(f, "{}", s),
-
             Token::ParenOpen => write!(f, "("),
             Token::ParenClose => write!(f, ")"),
             Token::Comma => write!(f, ","),
@@ -85,7 +76,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Hash, Clone)]
 pub enum Literal {
     Single(String),
     Double(String),
@@ -196,6 +187,27 @@ impl fmt::Display for Operator {
     }
 }
 
+#[derive(Debug, PartialEq, Hash, Clone)]
+pub enum Ident {
+    Plain(String),
+    String(String),
+    Single(String),
+    Double(String),
+    Integer(String),
+}
+
+impl fmt::Display for Ident {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Ident::Plain(s) => write!(f, "{}", s),
+            Ident::String(s) => write!(f, "{}", s),
+            Ident::Single(s) => write!(f, "{}", s),
+            Ident::Double(s) => write!(f, "{}", s),
+            Ident::Integer(s) => write!(f, "{}", s),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,7 +227,7 @@ mod tests {
         assert_eq!(
             t,
             (
-                Some(Token::Ident("B".to_string())),
+                Some(Token::Ident(Ident::Plain("B".to_string()))),
                 Some(Token::Operator(Operator::And))
             )
         );
