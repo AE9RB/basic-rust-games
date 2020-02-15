@@ -1,24 +1,34 @@
-pub enum Ident {
-    Plain(String),
+#[derive(Debug, PartialEq)]
+pub enum Ast {
+    Statement(Option<u32>), // Line number 0 to 65529, none is immediate
+    Expression,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Statement {
-    Data(Vec<Expr>),
+    Line(u32), // 0 to 65529
+    Data(Vec<Expression>),
     Def(Ident, Vec<Ident>),
-    Dim(Ident, usize),
-    Let(Ident, Box<Expr>),
+    Dim(Ident, Vec<i32>),
+    Let(Ident, Box<Expression>),
 }
 
-pub enum Expr {
+#[derive(Debug, PartialEq)]
+pub enum Expression {
     Single(f32),
     Double(f64),
     Integer(i32),
     String(String),
-    Function(Ident, Vec<Expr>),
-    Add(Box<Expr>, Box<Expr>),
-    Subtract(Box<Expr>, Box<Expr>),
-    Multiply(Box<Expr>, Box<Expr>),
-    Divide(Box<Expr>, Box<Expr>),
-    Equality(Box<Expr>, Box<Expr>),
-    Exponential(Box<Expr>, Box<Expr>),
+    Function(Ident, Vec<Expression>),
+    Add(Box<Expression>, Box<Expression>),
+    Subtract(Box<Expression>, Box<Expression>),
+    Multiply(Box<Expression>, Box<Expression>),
+    Divide(Box<Expression>, Box<Expression>),
+    Equality(Box<Expression>, Box<Expression>),
+    Exponential(Box<Expression>, Box<Expression>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Ident {
+    Plain(String),
 }

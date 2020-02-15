@@ -1,8 +1,9 @@
 mod core;
 
-use crate::core::token::*;
-use crate::core::lex::*;
 use crate::core::ast::*;
+use crate::core::lex::*;
+use crate::core::parse::*;
+use crate::core::token::*;
 
 fn main() {
     println!("Hello, world!");

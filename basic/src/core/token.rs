@@ -13,7 +13,7 @@ thread_local!(
         .collect();
 );
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
 pub enum Token {
     Unknown(String),
     Whitespace(usize),
@@ -42,11 +42,11 @@ impl Token {
     }
     pub fn scan_string(s: &str) -> (Option<Token>, Option<Token>) {
         STRING_TO_TOKEN.with(|stt| {
-            let mut ret:(Option<Token>, Option<Token>) = (None,None);
+            let mut ret: (Option<Token>, Option<Token>) = (None, None);
             let mut ident_len = s.len();
-            for (key_str,tok) in stt.iter() {
+            for (key_str, tok) in stt.iter() {
                 if s.ends_with(key_str) {
-                    let ident = &s[0..s.len()-key_str.len()];
+                    let ident = &s[0..s.len() - key_str.len()];
                     if ident.len() < ident_len {
                         ident_len = ident.len();
                         if ident.len() > 0 {
@@ -85,7 +85,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
 pub enum Literal {
     Single(String),
     Double(String),
@@ -104,8 +104,7 @@ impl fmt::Display for Literal {
     }
 }
 
-
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
 pub enum Statement {
     Data,
     Def,
@@ -158,7 +157,7 @@ impl fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
 pub enum Operator {
     Equals,
     Plus,
@@ -213,7 +212,13 @@ mod tests {
     fn test_scan_string() {
         let t = Token::scan_string("BAND");
         println!("{:?}", t);
-        assert_eq!(t, (Some(Token::Ident("B".to_string())), Some(Token::Operator(Operator::And))));
+        assert_eq!(
+            t,
+            (
+                Some(Token::Ident("B".to_string())),
+                Some(Token::Operator(Operator::And))
+            )
+        );
         let t = Token::scan_string("FOR");
         println!("{:?}", t);
         assert_eq!(t, (Some(Token::Statement(Statement::For)), None));

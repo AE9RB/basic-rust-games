@@ -134,7 +134,7 @@ impl<'a> Lex<'a> {
             if Self::is_basic_digit(c) {
                 digit = true;
             }
-            let (t1,t2) = Token::scan_string(&s);
+            let (t1, t2) = Token::scan_string(&s);
             if t1.is_some() {
                 self.next_token = t2;
                 return t1;
@@ -265,7 +265,10 @@ mod tests {
     #[test]
     fn test_remark() {
         let mut x = Lex::new("100 REM A fortunate comment");
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("100".to_string())));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Integer("100".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::Rem));
         assert_eq!(
@@ -291,18 +294,30 @@ mod tests {
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::IntegerIdent("I%".to_string()));
         assert_eq!(x.next().unwrap(), Token::Operator(Operator::Equals));
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("1".to_string())));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Integer("1".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::To));
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("30".to_string())));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Integer("30".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Operator(Operator::Minus));
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("10".to_string())));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Integer("10".to_string()))
+        );
         assert_eq!(x.next(), None);
     }
 
     #[test]
     fn test_unknown() {
         let mut x = Lex::new("10 fOr %woo in 0..4\n");
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Integer("10".to_string())));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Integer("10".to_string()))
+        );
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
@@ -311,8 +326,14 @@ mod tests {
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Ident("IN".to_string()));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Single("0.".to_string())));
-        assert_eq!(x.next().unwrap(), Token::Literal(Literal::Single(".4".to_string())));
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Single("0.".to_string()))
+        );
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Single(".4".to_string()))
+        );
         assert_eq!(x.next(), None);
     }
 }
