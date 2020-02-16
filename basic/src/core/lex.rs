@@ -4,6 +4,7 @@ use core::iter::Peekable;
 pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
     remark: bool,
+    prev_was_alphabetic: bool,
     next_token: Option<Token>,
 }
 
@@ -20,6 +21,7 @@ impl<'a> Lex<'a> {
         Lex {
             i: s.chars().take(t).peekable(),
             remark: false,
+            prev_was_alphabetic: false,
             next_token: None,
         }
     }
@@ -134,13 +136,8 @@ impl<'a> Lex<'a> {
             if Self::is_basic_digit(c) {
                 digit = true;
             }
-            // Using Token::from_string here is faster and less confusing
-            // since it allows tokens in the Ident like BASIC-80.
-            // But then tokens need delimiters. e.g. "M AND Y" vs "MANDY"
-            let (t1, t2) = Token::scan_string(&s);
-            if t1.is_some() {
-                self.next_token = t2;
-                return t1;
+            if let Some(t) = Token::from_string(&s) {
+                return Some(t);
             }
             if c == '$' {
                 return Some(Token::Ident(Ident::String(s)));
@@ -212,6 +209,22 @@ impl<'a> Iterator for Lex<'a> {
             }
             return Some(Token::Unknown(s));
         }
+        // alphabetic must be first
+        // because of logic to insert whitespace
+        if Self::is_basic_alphabetic(*p) {
+            let mut r = self.alphabetic();
+            if r == Some(Token::Word(Word::Rem)) {
+                self.remark = true;
+            }
+            if self.prev_was_alphabetic {
+                self.next_token = r;
+                r = Some(Token::Whitespace(1));
+            }
+            self.prev_was_alphabetic = true;
+            return r;
+        } else {
+            self.prev_was_alphabetic = false;
+        }
         if Self::is_basic_whitespace(*p) {
             return self.whitespace();
         }
@@ -220,13 +233,6 @@ impl<'a> Iterator for Lex<'a> {
         }
         if *p == '"' {
             return self.string();
-        }
-        if Self::is_basic_alphabetic(*p) {
-            let r = self.alphabetic();
-            if r == Some(Token::Statement(Statement::Rem)) {
-                self.remark = true;
-            }
-            return r;
         }
         return self.minutia();
     }
@@ -273,7 +279,7 @@ mod tests {
             Token::Literal(Literal::Integer("100".to_string()))
         );
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Statement(Statement::Rem));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::Rem));
         assert_eq!(
             x.next().unwrap(),
             Token::Unknown(" A fortunate comment".to_string())
@@ -286,20 +292,15 @@ mod tests {
         let mut x = Lex::new("BANDS");
         assert_eq!(
             x.next().unwrap(),
-            Token::Ident(Ident::Plain("B".to_string()))
-        );
-        assert_eq!(x.next().unwrap(), Token::Operator(Operator::And));
-        assert_eq!(
-            x.next().unwrap(),
-            Token::Ident(Ident::Plain("S".to_string()))
+            Token::Ident(Ident::Plain("BANDS".to_string()))
         );
         assert_eq!(x.next(), None);
     }
 
     #[test]
     fn test_for_loop() {
-        let mut x = Lex::new("for i%=1to30-10");
-        assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
+        let mut x = Lex::new("forI%=1to30-10");
+        assert_eq!(x.next().unwrap(), Token::Word(Word::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(
             x.next().unwrap(),
@@ -310,7 +311,7 @@ mod tests {
             x.next().unwrap(),
             Token::Literal(Literal::Integer("1".to_string()))
         );
-        assert_eq!(x.next().unwrap(), Token::Statement(Statement::To));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::To));
         assert_eq!(
             x.next().unwrap(),
             Token::Literal(Literal::Integer("30".to_string()))
@@ -331,7 +332,7 @@ mod tests {
             Token::Literal(Literal::Integer("10".to_string()))
         );
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Statement(Statement::For));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Unknown("%".to_string()));
         assert_eq!(

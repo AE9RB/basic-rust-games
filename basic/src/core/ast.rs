@@ -1,12 +1,11 @@
 #[derive(Debug, PartialEq)]
-pub enum Ast {
-    Statement(Option<u32>), // Line number 0 to 65529, none is immediate
-    Expression,
+pub struct Ast {
+    pub line: Option<u32>, // Line number 0 to 65529, none is immediate
+    pub root: Statement,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
-    Line(u32), // 0 to 65529
     Data(Vec<Expression>),
     Def(Ident, Vec<Ident>),
     Dim(Ident, Vec<i32>),
@@ -31,4 +30,8 @@ pub enum Expression {
 #[derive(Debug, PartialEq)]
 pub enum Ident {
     Plain(String),
+    String(String),
+    Single(String),
+    Double(String),
+    Integer(String),
 }

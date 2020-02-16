@@ -7,7 +7,7 @@ use std::fmt;
 thread_local!(
     static STRING_TO_TOKEN: HashMap<std::string::String, Token> = Token::iter()
         .cloned()
-        .chain(Statement::iter().map(|x| Token::Statement(x.clone())))
+        .chain(Word::iter().map(|x| Token::Word(x.clone())))
         .chain(Operator::iter().map(|x| Token::Operator(x.clone())))
         .map(|d| (d.to_string(), d))
         .collect();
@@ -18,7 +18,7 @@ pub enum Token {
     Unknown(String),
     Whitespace(usize),
     Literal(Literal),
-    Statement(Statement),
+    Word(Word),
     Operator(Operator),
     Ident(Ident),
     ParenOpen,
@@ -34,29 +34,6 @@ impl Token {
             None => None,
         })
     }
-    pub fn scan_string(s: &str) -> (Option<Token>, Option<Token>) {
-        STRING_TO_TOKEN.with(|stt| {
-            let mut ret: (Option<Token>, Option<Token>) = (None, None);
-            let mut ident_len = s.len();
-            for (key_str, tok) in stt.iter() {
-                if s.ends_with(key_str) {
-                    let ident = &s[0..s.len() - key_str.len()];
-                    if ident.len() < ident_len {
-                        ident_len = ident.len();
-                        if ident.len() > 0 {
-                            ret = (
-                                Some(Token::Ident(Ident::Plain(ident.to_string()))),
-                                Some(tok.clone()),
-                            );
-                        } else {
-                            ret = (Some(tok.clone()), None);
-                        }
-                    }
-                }
-            }
-            return ret;
-        })
-    }
 }
 
 impl fmt::Display for Token {
@@ -65,7 +42,7 @@ impl fmt::Display for Token {
             Token::Unknown(s) => write!(f, "{}", s),
             Token::Whitespace(u) => write!(f, "{s:>w$}", s = "", w = u),
             Token::Literal(s) => write!(f, "{}", s),
-            Token::Statement(s) => write!(f, "{}", s),
+            Token::Word(s) => write!(f, "{}", s),
             Token::Operator(s) => write!(f, "{}", s),
             Token::Ident(s) => write!(f, "{}", s),
             Token::ParenOpen => write!(f, "("),
@@ -96,7 +73,7 @@ impl fmt::Display for Literal {
 }
 
 #[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
-pub enum Statement {
+pub enum Word {
     Data,
     Def,
     Dim,
@@ -120,30 +97,30 @@ pub enum Statement {
     To,
 }
 
-impl fmt::Display for Statement {
+impl fmt::Display for Word {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Statement::Data => write!(f, "DATA"),
-            Statement::Def => write!(f, "DEF"),
-            Statement::Dim => write!(f, "DIM"),
-            Statement::Else => write!(f, "ELSE"),
-            Statement::End => write!(f, "END"),
-            Statement::For => write!(f, "FOR"),
-            Statement::GoSub => write!(f, "GOSUB"),
-            Statement::GoTo => write!(f, "GOTO"),
-            Statement::If => write!(f, "IF"),
-            Statement::Input => write!(f, "INPUT"),
-            Statement::Let => write!(f, "LET"),
-            Statement::Next => write!(f, "NEXT"),
-            Statement::On => write!(f, "ON"),
-            Statement::Print => write!(f, "PRINT"),
-            Statement::Read => write!(f, "READ"),
-            Statement::Rem => write!(f, "REM"),
-            Statement::Restore => write!(f, "RESTORE"),
-            Statement::Return => write!(f, "RETURN"),
-            Statement::Stop => write!(f, "STOP"),
-            Statement::Then => write!(f, "THEN"),
-            Statement::To => write!(f, "TO"),
+            Word::Data => write!(f, "DATA"),
+            Word::Def => write!(f, "DEF"),
+            Word::Dim => write!(f, "DIM"),
+            Word::Else => write!(f, "ELSE"),
+            Word::End => write!(f, "END"),
+            Word::For => write!(f, "FOR"),
+            Word::GoSub => write!(f, "GOSUB"),
+            Word::GoTo => write!(f, "GOTO"),
+            Word::If => write!(f, "IF"),
+            Word::Input => write!(f, "INPUT"),
+            Word::Let => write!(f, "LET"),
+            Word::Next => write!(f, "NEXT"),
+            Word::On => write!(f, "ON"),
+            Word::Print => write!(f, "PRINT"),
+            Word::Read => write!(f, "READ"),
+            Word::Rem => write!(f, "REM"),
+            Word::Restore => write!(f, "RESTORE"),
+            Word::Return => write!(f, "RETURN"),
+            Word::Stop => write!(f, "STOP"),
+            Word::Then => write!(f, "THEN"),
+            Word::To => write!(f, "TO"),
         }
     }
 }
@@ -215,24 +192,8 @@ mod tests {
     #[test]
     fn test_from_string() {
         let t = Token::from_string("REM");
-        assert_eq!(t, Some(Token::Statement(Statement::Rem)));
+        assert_eq!(t, Some(Token::Word(Word::Rem)));
         let t = Token::from_string("PICKLES");
         assert_eq!(t, None);
-    }
-
-    #[test]
-    fn test_scan_string() {
-        let t = Token::scan_string("BAND");
-        println!("{:?}", t);
-        assert_eq!(
-            t,
-            (
-                Some(Token::Ident(Ident::Plain("B".to_string()))),
-                Some(Token::Operator(Operator::And))
-            )
-        );
-        let t = Token::scan_string("FOR");
-        println!("{:?}", t);
-        assert_eq!(t, (Some(Token::Statement(Statement::For)), None));
     }
 }

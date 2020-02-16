@@ -20,7 +20,8 @@ impl<'a, T: Iterator<Item = &'a Token>> Parse<'a, T> {
                     }
                 } as fn(&&Token) -> bool)
                 .peekable(),
-        }.start()
+        }
+        .start()
     }
 
     fn next(&mut self) -> Option<&Token> {
@@ -32,8 +33,12 @@ impl<'a, T: Iterator<Item = &'a Token>> Parse<'a, T> {
     }
 
     fn start(&mut self) -> Ast {
-        //TODO
-        Ast::Statement(Some(10))
+        self.peek();
+        self.next();
+        Ast {
+            line: None,
+            root: Statement::Data(vec![]),
+        }
     }
 }
 
@@ -49,6 +54,12 @@ mod tests {
     #[test]
     fn test_foo() {
         let x = parse_str("for i%=1to30-10");
-        assert_eq!(x, Ast::Statement(Some(10)));
+        assert_eq!(
+            x,
+            Ast {
+                line: None,
+                root: Statement::Data(vec![])
+            }
+        );
     }
 }
