@@ -4,7 +4,6 @@ use core::iter::Peekable;
 pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
     remark: bool,
-    prev_was_alphabetic: bool,
     next_token: Option<Token>,
 }
 
@@ -21,7 +20,6 @@ impl<'a> Lex<'a> {
         Lex {
             i: s.chars().take(t).peekable(),
             remark: false,
-            prev_was_alphabetic: false,
             next_token: None,
         }
     }
@@ -80,6 +78,9 @@ impl<'a> Lex<'a> {
             }
             if c == '#' {
                 return Some(Token::Literal(Literal::Double(s)));
+            }
+            if c == '%' {
+                return Some(Token::Literal(Literal::Integer(s)));
             }
             if let Some(p) = self.i.peek() {
                 if c == 'E' || c == 'D' {
@@ -203,30 +204,22 @@ impl<'a> Iterator for Lex<'a> {
         }
         let p = self.i.peek()?;
         if self.remark {
-            let mut s = String::new();
-            while let Some(c) = self.i.next() {
-                s.push(c);
-            }
-            return Some(Token::Unknown(s));
-        }
-        // alphabetic must be first
-        // because of logic to insert whitespace
-        if Self::is_basic_alphabetic(*p) {
-            let mut r = self.alphabetic();
-            if r == Some(Token::Word(Word::Rem)) {
-                self.remark = true;
-            }
-            if self.prev_was_alphabetic {
-                self.next_token = r;
-                r = Some(Token::Whitespace(1));
-            }
-            self.prev_was_alphabetic = true;
-            return r;
-        } else {
-            self.prev_was_alphabetic = false;
+            return Some(Token::Unknown(self.i.by_ref().collect::<String>()));
         }
         if Self::is_basic_whitespace(*p) {
             return self.whitespace();
+        }
+        if Self::is_basic_alphabetic(*p) {
+            let r = self.alphabetic();
+            if r == Some(Token::Word(Word::Rem)) {
+                self.remark = true;
+            }
+            if let Some(p) = self.i.peek() {
+                if Self::is_basic_alphabetic(*p) {
+                    self.next_token = Some(Token::Whitespace(1));
+                }
+            }
+            return r;
         }
         if Self::is_basic_digit(*p) || *p == '.' {
             return self.number();
@@ -234,7 +227,11 @@ impl<'a> Iterator for Lex<'a> {
         if *p == '"' {
             return self.string();
         }
-        return self.minutia();
+        let r = self.minutia();
+        if r == Some(Token::Word(Word::Rem2)) {
+            self.remark = true;
+        }
+        return r;
     }
 }
 
@@ -284,6 +281,19 @@ mod tests {
             x.next().unwrap(),
             Token::Unknown(" A fortunate comment".to_string())
         );
+        assert_eq!(x.next(), None);
+    }
+
+    #[test]
+    fn test_remark2() {
+        let mut x = Lex::new("100 'The comment");
+        assert_eq!(
+            x.next().unwrap(),
+            Token::Literal(Literal::Integer("100".to_string()))
+        );
+        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::Rem2));
+        assert_eq!(x.next().unwrap(), Token::Unknown("The comment".to_string()));
         assert_eq!(x.next(), None);
     }
 
