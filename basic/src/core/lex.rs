@@ -216,6 +216,7 @@ impl<'a> Iterator for Lex<'a> {
             }
             if let Some(p) = self.i.peek() {
                 if Self::is_basic_alphabetic(*p) {
+                    //TODO unless immediate mode
                     self.next_token = Some(Token::Whitespace(1));
                 }
             }

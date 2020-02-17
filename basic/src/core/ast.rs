@@ -8,7 +8,7 @@ pub struct Ast {
 pub enum Statement {
     Data(Vec<Expression>),
     Def(Ident, Vec<Ident>),
-    Dim(Ident, Vec<i32>),
+    Dim(Ident, Vec<i16>),
     Let(Ident, Box<Expression>),
 }
 
