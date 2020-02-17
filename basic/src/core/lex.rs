@@ -4,6 +4,8 @@ use core::iter::Peekable;
 pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
     remark: bool,
+    starting: bool,
+    immediate: bool,
     next_token: Option<Token>,
 }
 
@@ -20,6 +22,8 @@ impl<'a> Lex<'a> {
         Lex {
             i: s.chars().take(t).peekable(),
             remark: false,
+            starting: true,
+            immediate: true,
             next_token: None,
         }
     }
@@ -206,9 +210,32 @@ impl<'a> Iterator for Lex<'a> {
         if self.remark {
             return Some(Token::Unknown(self.i.by_ref().collect::<String>()));
         }
+
         if Self::is_basic_whitespace(*p) {
-            return self.whitespace();
+            let tw = self.whitespace();
+            if self.starting {
+                self.starting = false;
+                let tn = self.next();
+                if let Some(Token::Literal(Literal::Integer(_))) = tn {
+                    self.immediate = false;
+                    return tn;
+                }
+                self.next_token = tn;
+            }
+            return tw;
         }
+        if Self::is_basic_digit(*p) || *p == '.' {
+            let tn = self.number();
+            if self.starting {
+                self.starting = false;
+                if let Some(Token::Literal(Literal::Integer(_))) = tn {
+                    self.immediate = false;
+                }
+            }
+            return tn;
+        }
+        self.starting = false;
+
         if Self::is_basic_alphabetic(*p) {
             let r = self.alphabetic();
             if r == Some(Token::Word(Word::Rem)) {
@@ -216,14 +243,12 @@ impl<'a> Iterator for Lex<'a> {
             }
             if let Some(p) = self.i.peek() {
                 if Self::is_basic_alphabetic(*p) {
-                    //TODO unless immediate mode
-                    self.next_token = Some(Token::Whitespace(1));
+                    if !self.immediate {
+                        self.next_token = Some(Token::Whitespace(1));
+                    }
                 }
             }
             return r;
-        }
-        if Self::is_basic_digit(*p) || *p == '.' {
-            return self.number();
         }
         if *p == '"' {
             return self.string();
@@ -271,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_remark() {
-        let mut x = Lex::new("100 REM A fortunate comment");
+        let mut x = Lex::new(" 100 REM A fortunate comment");
         assert_eq!(
             x.next().unwrap(),
             Token::Literal(Literal::Integer("100".to_string()))
@@ -310,9 +335,9 @@ mod tests {
 
     #[test]
     fn test_for_loop() {
-        let mut x = Lex::new("forI%=1to30-10");
-        assert_eq!(x.next().unwrap(), Token::Word(Word::For));
+        let mut x = Lex::new(" forI%=1to30-10");
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::For));
         assert_eq!(
             x.next().unwrap(),
             Token::Ident(Ident::Integer("I%".to_string()))
