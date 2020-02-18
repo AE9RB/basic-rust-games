@@ -1,4 +1,4 @@
-mod core;
+extern crate core;
 
 use crate::core::lex::*;
 use crate::core::parse::*;

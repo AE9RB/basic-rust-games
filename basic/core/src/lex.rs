@@ -1,5 +1,5 @@
 use super::token::*;
-use core::iter::Peekable;
+use std::iter::Peekable;
 
 pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
@@ -7,6 +7,66 @@ pub struct Lex<'a> {
     starting: bool,
     immediate: bool,
     next_token: Option<Token>,
+}
+
+impl<'a> Iterator for Lex<'a> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_token.is_some() {
+            return self.next_token.take();
+        }
+        let p = self.i.peek()?;
+        if self.remark {
+            return Some(Token::Unknown(self.i.by_ref().collect::<String>()));
+        }
+
+        if Self::is_basic_whitespace(*p) {
+            let tw = self.whitespace();
+            if self.starting {
+                let tn = self.next();
+                if !self.immediate {
+                    return tn;
+                }
+                self.next_token = tn;
+            }
+            return tw;
+        }
+        if Self::is_basic_digit(*p) || *p == '.' {
+            let tn = self.number();
+            if self.starting {
+                self.starting = false;
+                if let Some(Token::Literal(Literal::Integer(_))) = tn {
+                    self.immediate = false;
+                }
+            }
+            return tn;
+        }
+        self.starting = false;
+
+        if Self::is_basic_alphabetic(*p) {
+            let r = self.alphabetic();
+            if r == Some(Token::Word(Word::Rem)) {
+                self.remark = true;
+            }
+            if let Some(p) = self.i.peek() {
+                if Self::is_basic_alphabetic(*p) {
+                    if !self.immediate {
+                        self.next_token = Some(Token::Whitespace(1));
+                    }
+                }
+            }
+            return r;
+        }
+        if *p == '"' {
+            return self.string();
+        }
+        let r = self.minutia();
+        if r == Some(Token::Word(Word::Rem2)) {
+            self.remark = true;
+        }
+        return r;
+    }
 }
 
 impl<'a> Lex<'a> {
@@ -196,66 +256,6 @@ impl<'a> Lex<'a> {
             }
         }
         return Some(Token::Unknown(s));
-    }
-}
-
-impl<'a> Iterator for Lex<'a> {
-    type Item = Token;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.next_token.is_some() {
-            return self.next_token.take();
-        }
-        let p = self.i.peek()?;
-        if self.remark {
-            return Some(Token::Unknown(self.i.by_ref().collect::<String>()));
-        }
-
-        if Self::is_basic_whitespace(*p) {
-            let tw = self.whitespace();
-            if self.starting {
-                let tn = self.next();
-                if !self.immediate {
-                    return tn;
-                }
-                self.next_token = tn;
-            }
-            return tw;
-        }
-        if Self::is_basic_digit(*p) || *p == '.' {
-            let tn = self.number();
-            if self.starting {
-                self.starting = false;
-                if let Some(Token::Literal(Literal::Integer(_))) = tn {
-                    self.immediate = false;
-                }
-            }
-            return tn;
-        }
-        self.starting = false;
-
-        if Self::is_basic_alphabetic(*p) {
-            let r = self.alphabetic();
-            if r == Some(Token::Word(Word::Rem)) {
-                self.remark = true;
-            }
-            if let Some(p) = self.i.peek() {
-                if Self::is_basic_alphabetic(*p) {
-                    if !self.immediate {
-                        self.next_token = Some(Token::Whitespace(1));
-                    }
-                }
-            }
-            return r;
-        }
-        if *p == '"' {
-            return self.string();
-        }
-        let r = self.minutia();
-        if r == Some(Token::Word(Word::Rem2)) {
-            self.remark = true;
-        }
-        return r;
     }
 }
 

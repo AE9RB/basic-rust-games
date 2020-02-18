@@ -8,7 +8,7 @@ macro_rules! error {
     // e.g. error!(self, NextWithoutFor)
     ($self:ident, $err:ident) => {
         Err(Error {
-            err: $crate::core::error::Basic::$err as u16,
+            err: $crate::error::Basic::$err as u16,
             erl: $self.line,
         })
     };
