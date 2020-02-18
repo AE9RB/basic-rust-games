@@ -32,7 +32,7 @@ pub fn parse<'a, T: Iterator<Item = &'a Token>>(iter: T) -> Result {
 type Line = u16;
 
 struct Parse<'a, T: Iterator<Item = &'a Token>> {
-    token_stream: std::iter::Peekable<std::iter::Filter<T, fn(&&Token) -> bool>>,
+    token_stream: std::iter::Peekable<T>,
     line: Line,
 }
 
