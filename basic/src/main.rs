@@ -1,5 +1,3 @@
-//extern crate core;
-
 mod parsing;
 use parsing::lex::*;
 use parsing::parse::*;

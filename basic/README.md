@@ -1,7 +1,7 @@
 # BASIC-78
 
-An implementation of BASIC which probably meets the qualifications set forth
-in ANSI X3.60-1978. I don't have this document.
+An implementation of BASIC which probably meets the qualifications
+set forth in ANSI X3.60-1978. I don't have this document.
 Despite being superseded and revoked, it's expensive to obtain.
 Fortunately, the goal here isn't to create a certified implementation.
 
