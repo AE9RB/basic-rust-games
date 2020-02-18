@@ -1,5 +1,5 @@
-extern crate macros;
-use macros::EnumIter;
+extern crate basic78;
+use basic78::EnumIter;
 
 use std::collections::HashMap;
 use std::fmt;

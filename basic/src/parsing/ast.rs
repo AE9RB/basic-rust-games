@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub struct Ast {
-    pub line: Option<u32>, // Line number 0 to 65529, none is immediate
+    pub line: Option<u32>, // Line number 0 to 65529, none is direct
     pub root: Statement,
 }
 

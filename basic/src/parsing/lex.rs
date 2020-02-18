@@ -5,7 +5,7 @@ pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
     remark: bool,
     starting: bool,
-    immediate: bool,
+    direct: bool,
     next_token: Option<Token>,
 }
 
@@ -25,7 +25,7 @@ impl<'a> Iterator for Lex<'a> {
             let tw = self.whitespace();
             if self.starting {
                 let tn = self.next();
-                if !self.immediate {
+                if !self.direct {
                     return tn;
                 }
                 self.next_token = tn;
@@ -37,7 +37,7 @@ impl<'a> Iterator for Lex<'a> {
             if self.starting {
                 self.starting = false;
                 if let Some(Token::Literal(Literal::Integer(_))) = tn {
-                    self.immediate = false;
+                    self.direct = false;
                 }
             }
             return tn;
@@ -51,7 +51,7 @@ impl<'a> Iterator for Lex<'a> {
             }
             if let Some(p) = self.i.peek() {
                 if Self::is_basic_alphabetic(*p) {
-                    if !self.immediate {
+                    if !self.direct {
                         self.next_token = Some(Token::Whitespace(1));
                     }
                 }
@@ -83,7 +83,7 @@ impl<'a> Lex<'a> {
             i: s.chars().take(t).peekable(),
             remark: false,
             starting: true,
-            immediate: true,
+            direct: true,
             next_token: None,
         }
     }

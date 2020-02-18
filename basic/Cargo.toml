@@ -1,6 +1,9 @@
-[workspace]
-members = [
-    "macros",
-    "core",
-    "bin",
-]
+[package]
+name = "basic78"
+version = "0.1.0"
+authors = ["David Turnbull"]
+
+edition = "2018"
+
+[lib]
+proc-macro = true
