@@ -214,10 +214,8 @@ impl<'a> Iterator for Lex<'a> {
         if Self::is_basic_whitespace(*p) {
             let tw = self.whitespace();
             if self.starting {
-                self.starting = false;
                 let tn = self.next();
-                if let Some(Token::Literal(Literal::Integer(_))) = tn {
-                    self.immediate = false;
+                if !self.immediate {
                     return tn;
                 }
                 self.next_token = tn;
