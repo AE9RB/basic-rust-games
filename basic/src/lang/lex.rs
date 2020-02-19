@@ -3,9 +3,9 @@ use std::iter::Peekable;
 
 pub struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
+    line_number: u16,
     remark: bool,
     starting: bool,
-    direct: bool,
     next_token: Option<Token>,
 }
 
@@ -25,19 +25,38 @@ impl<'a> Iterator for Lex<'a> {
             let tw = self.whitespace();
             if self.starting {
                 let tn = self.next();
-                if !self.direct {
+                if !self.is_direct() {
                     return tn;
                 }
                 self.next_token = tn;
             }
+            self.i.peek()?; // drop tail
             return tw;
         }
         if Self::is_basic_digit(*p) || *p == '.' {
             let tn = self.number();
             if self.starting {
                 self.starting = false;
-                if let Some(Token::Literal(Literal::Integer(_))) = tn {
-                    self.direct = false;
+                if let Some(Token::Literal(lit)) = tn.as_ref() {
+                    let s = match lit {
+                        Literal::Integer(s) => s,
+                        Literal::Single(s) => s,
+                        Literal::Double(s) => s,
+                        Literal::String(s) => s,
+                    };
+                    if s.chars().all(|c| Self::is_basic_digit(c)) {
+                        if let Ok(line) = s.parse::<u16>() {
+                            if line <= 65529 {
+                                self.line_number = line;
+                                let n = self.next();
+                                if let Some(Token::Whitespace(_)) = n {
+                                    return n;
+                                }
+                                self.next_token = n;
+                                return Some(Token::Whitespace(1));
+                            }
+                        }
+                    }
                 }
             }
             return tn;
@@ -51,7 +70,7 @@ impl<'a> Iterator for Lex<'a> {
             }
             if let Some(p) = self.i.peek() {
                 if Self::is_basic_alphabetic(*p) {
-                    if !self.direct {
+                    if !self.is_direct() {
                         self.next_token = Some(Token::Whitespace(1));
                     }
                 }
@@ -81,11 +100,16 @@ impl<'a> Lex<'a> {
         }
         Lex {
             i: s.chars().take(t).peekable(),
+            line_number: 65535,
             remark: false,
             starting: true,
-            direct: true,
             next_token: None,
         }
+    }
+
+    pub fn line_number(&mut self) -> u16 {
+        debug_assert!(!self.starting, "Not valid until started");
+        self.line_number
     }
 
     fn is_basic_whitespace(c: char) -> bool {
@@ -98,6 +122,10 @@ impl<'a> Lex<'a> {
 
     fn is_basic_alphabetic(c: char) -> bool {
         c.is_ascii_alphabetic()
+    }
+
+    fn is_direct(&self) -> bool {
+        self.line_number == 65535
     }
 
     fn whitespace(&mut self) -> Option<Token> {
@@ -275,14 +303,18 @@ mod tests {
             Lex::new(&s).next().unwrap(),
             Token::Literal(Literal::Double("3.1415926".to_string()))
         );
-        let s = "32767".to_string();
+        let s = "print32767".to_string();
+        let mut l = Lex::new(&s);
+        assert_eq!(l.next().unwrap(), Token::Word(Word::Print));
         assert_eq!(
-            Lex::new(&s).next().unwrap(),
+            l.next().unwrap(),
             Token::Literal(Literal::Integer("32767".to_string()))
         );
-        let s = "32768".to_string();
+        let s = "print32768".to_string();
+        let mut l = Lex::new(&s);
+        assert_eq!(l.next().unwrap(), Token::Word(Word::Print));
         assert_eq!(
-            Lex::new(&s).next().unwrap(),
+            l.next().unwrap(),
             Token::Literal(Literal::Single("32768".to_string()))
         );
         let s = "24e9".to_string();
@@ -294,12 +326,9 @@ mod tests {
 
     #[test]
     fn test_remark() {
-        let mut x = Lex::new(" 100 REM A fortunate comment");
-        assert_eq!(
-            x.next().unwrap(),
-            Token::Literal(Literal::Integer("100".to_string()))
-        );
+        let mut x = Lex::new(" 100REM A fortunate comment");
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        assert_eq!(x.line_number(), 100);
         assert_eq!(x.next().unwrap(), Token::Word(Word::Rem));
         assert_eq!(
             x.next().unwrap(),
@@ -310,15 +339,12 @@ mod tests {
 
     #[test]
     fn test_remark2() {
-        let mut x = Lex::new("100 'The comment");
-        assert_eq!(
-            x.next().unwrap(),
-            Token::Literal(Literal::Integer("100".to_string()))
-        );
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        let mut x = Lex::new("100  'The comment");
+        assert_eq!(x.next().unwrap(), Token::Whitespace(2));
         assert_eq!(x.next().unwrap(), Token::Word(Word::Rem2));
         assert_eq!(x.next().unwrap(), Token::Unknown("The comment".to_string()));
         assert_eq!(x.next(), None);
+        assert_eq!(x.line_number(), 100);
     }
 
     #[test]
@@ -359,12 +385,16 @@ mod tests {
     }
 
     #[test]
+    fn test_unk() {
+        let mut x = Lex::new("10 PRINT 10");
+        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::Print));
+        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+    }
+
+    #[test]
     fn test_unknown() {
-        let mut x = Lex::new("10 fOr %woo in 0..4\n");
-        assert_eq!(
-            x.next().unwrap(),
-            Token::Literal(Literal::Integer("10".to_string()))
-        );
+        let mut x = Lex::new("10 fOr %woo in 0..4 \n");
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.next().unwrap(), Token::Word(Word::For));
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));

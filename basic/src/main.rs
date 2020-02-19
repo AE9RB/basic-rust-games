@@ -1,9 +1,9 @@
-mod parsing;
-use parsing::lex::*;
-use parsing::parse::*;
-use parsing::token::*;
+mod lang;
+use lang::line::*;
 
 fn main() {
-    let t = parse(Lex::new("10 PRINT 10").collect::<Vec<Token>>().iter());
+    let mut t = Line::from_str(" 10 PRINT 10 \r\n");
+    t.ast();
     println!("{:?}", t);
+    println!("{}", t);
 }

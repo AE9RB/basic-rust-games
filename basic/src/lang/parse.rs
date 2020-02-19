@@ -1,22 +1,11 @@
 use super::ast::*;
-use super::error::Error;
+use super::error::*;
 use super::token::*;
 
-type Result = std::result::Result<Ast, Error>;
-
-macro_rules! error {
-    // e.g. error!(self, NextWithoutFor)
-    ($self:ident, $err:ident) => {
-        Err(Error {
-            err: $crate::parsing::error::Basic::$err as u16,
-            erl: $self.line,
-        })
-    };
-}
+type Result = std::result::Result<Vec<Statement>, Error>;
 
 pub fn parse<'a, T: Iterator<Item = &'a Token>>(iter: T) -> Result {
     Parse {
-        line: 65535,
         token_stream: iter
             .filter({
                 |&_| {
@@ -29,11 +18,8 @@ pub fn parse<'a, T: Iterator<Item = &'a Token>>(iter: T) -> Result {
     .start()
 }
 
-type Line = u16;
-
 struct Parse<'a, T: Iterator<Item = &'a Token>> {
     token_stream: std::iter::Peekable<T>,
-    line: Line,
 }
 
 impl<'a, T: Iterator<Item = &'a Token>> Parse<'a, T> {
@@ -45,27 +31,17 @@ impl<'a, T: Iterator<Item = &'a Token>> Parse<'a, T> {
         self.token_stream.peek()
     }
 
-    fn expect(&mut self, token: &Token) -> Result {
+    fn expect(&mut self, _: &Token) -> Result {
         match self.next() {
-            Some(t) => {
-                println!("{}", t);
-                Ok(Ast {
-                    line: None,
-                    root: Statement::Data(vec![]),
-                })
-            }
-            None => error!(self, SyntaxError),
+            Some(_) => Ok(vec![Statement::Data(vec![])]),
+            None => error!(SyntaxError),
         }
     }
 
     fn start(&mut self) -> Result {
+        self.peek();
         self.expect(&Token::Comma)?;
-        //self.start()
-
-        Ok(Ast {
-            line: None,
-            root: Statement::Data(vec![]),
-        })
+        Ok(vec![Statement::Data(vec![])])
     }
 }
 
@@ -81,24 +57,12 @@ mod tests {
     #[test]
     fn test_foo1() {
         let x = parse_str("for i%=1to30-10").unwrap();
-        assert_eq!(
-            x,
-            Ast {
-                line: None,
-                root: Statement::Data(vec![])
-            }
-        );
+        assert_eq!(x, vec![Statement::Data(vec![])]);
     }
 
     #[test]
     fn test_foo2() {
         let x = parse_str("for i%=1to30-10").unwrap();
-        assert_eq!(
-            x,
-            Ast {
-                line: None,
-                root: Statement::Data(vec![])
-            }
-        );
+        assert_eq!(x, vec![Statement::Data(vec![])]);
     }
 }
