@@ -2,21 +2,46 @@ use super::token::*;
 use std::iter::Peekable;
 
 pub fn lex(s: &str) -> (u16, Vec<Token>) {
-    let l = &mut Lex::new(s);
-    let t = l.collect::<Vec<Token>>();
+    let mut t = s.len();
+    if s.ends_with("\r\n") {
+        t -= 2
+    } else if s.ends_with("\r") {
+        t -= 1
+    } else if s.ends_with("\n") {
+        t -= 1
+    }
+    let l = &mut Lex {
+        i: s.chars().take(t).peekable(),
+        line_number: 65535,
+        remark: false,
+        starting: true,
+        next_token: None,
+    };
+    let mut t = l.collect::<Vec<Token>>();
     let n = l.line_number;
+
+    if let Some(Token::Whitespace(_)) = t.last() {
+        t.pop();
+    }
+
+    if let Some(Token::Unknown(_)) = t.last() {
+        if let Some(Token::Unknown(s)) = t.pop() {
+            t.push(Token::Unknown(s.trim_end().to_string()));
+        }
+    }
+
     (n, t)
 }
 
-struct Lex<'a> {
-    i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
+struct Lex<T: Iterator<Item = char>> {
+    i: Peekable<T>,
     line_number: u16,
     remark: bool,
     starting: bool,
     next_token: Option<Token>,
 }
 
-impl<'a> Iterator for Lex<'a> {
+impl<T: Iterator<Item = char>> Iterator for Lex<T> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -37,7 +62,6 @@ impl<'a> Iterator for Lex<'a> {
                 }
                 self.next_token = tn;
             }
-            self.i.peek()?; // drop tail
             return tw;
         }
         if Self::is_basic_digit(*p) || *p == '.' {
@@ -95,25 +119,7 @@ impl<'a> Iterator for Lex<'a> {
     }
 }
 
-impl<'a> Lex<'a> {
-    fn new(s: &'a str) -> Lex {
-        let mut t = s.len();
-        if s.ends_with("\r\n") {
-            t -= 2
-        } else if s.ends_with("\r") {
-            t -= 1
-        } else if s.ends_with("\n") {
-            t -= 1
-        }
-        Lex {
-            i: s.chars().take(t).peekable(),
-            line_number: 65535,
-            remark: false,
-            starting: true,
-            next_token: None,
-        }
-    }
-
+impl<T: Iterator<Item = char>> Lex<T> {
     fn is_basic_whitespace(c: char) -> bool {
         c == ' ' || c == '\t'
     }
@@ -295,129 +301,142 @@ mod tests {
 
     #[test]
     fn test_numbers() {
-        let s = "3.141593".to_string();
+        fn tok(s: &str) -> Token {
+            let s = format!("?{}", s);
+            let (_, l) = lex(&s);
+            let mut i = l.iter();
+            i.next();
+            i.next().unwrap().clone()
+        }
+
         assert_eq!(
-            Lex::new(&s).next().unwrap(),
+            tok("3.141593"),
             Token::Literal(Literal::Single("3.141593".to_string()))
         );
-        let s = "3.1415926".to_string();
         assert_eq!(
-            Lex::new(&s).next().unwrap(),
-            Token::Literal(Literal::Double("3.1415926".to_string()))
+            lex("3.1415926").1.iter().next().unwrap(),
+            &Token::Literal(Literal::Double("3.1415926".to_string()))
         );
-        let s = "print32767".to_string();
-        let mut l = Lex::new(&s);
-        assert_eq!(l.next().unwrap(), Token::Word(Word::Print));
         assert_eq!(
-            l.next().unwrap(),
+            tok("32767"),
             Token::Literal(Literal::Integer("32767".to_string()))
         );
-        let s = "print32768".to_string();
-        let mut l = Lex::new(&s);
-        assert_eq!(l.next().unwrap(), Token::Word(Word::Print));
         assert_eq!(
-            l.next().unwrap(),
+            tok("32768"),
             Token::Literal(Literal::Single("32768".to_string()))
         );
-        let s = "24e9".to_string();
         assert_eq!(
-            Lex::new(&s).next().unwrap(),
+            tok("24e9"),
             Token::Literal(Literal::Single("24E9".to_string()))
         );
     }
 
     #[test]
     fn test_remark() {
-        let mut x = Lex::new(" 100REM A fortunate comment");
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.line_number, 100);
-        assert_eq!(x.next().unwrap(), Token::Word(Word::Rem1));
+        let (ln, v) = lex(" 100REM A fortunate comment\n");
+        assert_eq!(ln, 100);
+        let mut x = v.iter();
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Word(Word::Rem1));
         assert_eq!(
             x.next().unwrap(),
-            Token::Unknown(" A fortunate comment".to_string())
+            &Token::Unknown(" A fortunate comment".to_string())
         );
         assert_eq!(x.next(), None);
     }
 
     #[test]
     fn test_remark2() {
-        let mut x = Lex::new("100  'The comment");
-        assert_eq!(x.next().unwrap(), Token::Whitespace(2));
-        assert_eq!(x.next().unwrap(), Token::Word(Word::Rem2));
-        assert_eq!(x.next().unwrap(), Token::Unknown("The comment".to_string()));
+        let (ln, v) = lex("100  'The comment  \r\n");
+        assert_eq!(ln, 100);
+        let mut x = v.iter();
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(2));
+        assert_eq!(x.next().unwrap(), &Token::Word(Word::Rem2));
+        assert_eq!(
+            x.next().unwrap(),
+            &Token::Unknown("The comment".to_string())
+        );
         assert_eq!(x.next(), None);
-        assert_eq!(x.line_number, 100);
     }
 
     #[test]
     fn test_scanner() {
-        let mut x = Lex::new("BANDS");
+        let (ln, v) = lex("BANDS\r");
+        assert_eq!(ln, 65535);
+        let mut x = v.iter();
         assert_eq!(
             x.next().unwrap(),
-            Token::Ident(Ident::Plain("BANDS".to_string()))
+            &Token::Ident(Ident::Plain("BANDS".to_string()))
         );
         assert_eq!(x.next(), None);
     }
 
     #[test]
     fn test_for_loop() {
-        let mut x = Lex::new(" forI%=1to30-10");
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Word(Word::For));
+        let (ln, v) = lex(" forI%=1to30-10");
+        assert_eq!(ln, 65535);
+        let mut x = v.iter();
+
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Word(Word::For));
         assert_eq!(
             x.next().unwrap(),
-            Token::Ident(Ident::Integer("I%".to_string()))
+            &Token::Ident(Ident::Integer("I%".to_string()))
         );
-        assert_eq!(x.next().unwrap(), Token::Operator(Operator::Equals));
+        assert_eq!(x.next().unwrap(), &Token::Operator(Operator::Equals));
         assert_eq!(
             x.next().unwrap(),
-            Token::Literal(Literal::Integer("1".to_string()))
+            &Token::Literal(Literal::Integer("1".to_string()))
         );
-        assert_eq!(x.next().unwrap(), Token::Word(Word::To));
+        assert_eq!(x.next().unwrap(), &Token::Word(Word::To));
         assert_eq!(
             x.next().unwrap(),
-            Token::Literal(Literal::Integer("30".to_string()))
+            &Token::Literal(Literal::Integer("30".to_string()))
         );
-        assert_eq!(x.next().unwrap(), Token::Operator(Operator::Minus));
+        assert_eq!(x.next().unwrap(), &Token::Operator(Operator::Minus));
         assert_eq!(
             x.next().unwrap(),
-            Token::Literal(Literal::Integer("10".to_string()))
+            &Token::Literal(Literal::Integer("10".to_string()))
         );
         assert_eq!(x.next(), None);
     }
 
     #[test]
     fn test_unk() {
-        let mut x = Lex::new("10 PRINT 10");
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Word(Word::Print));
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        let (ln, v) = lex("10 PRINT 10");
+        assert_eq!(ln, 10);
+        let mut x = v.iter();
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Word(Word::Print));
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
     }
 
     #[test]
     fn test_unknown() {
-        let mut x = Lex::new("10 fOr %woo in 0..4 \n");
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Word(Word::For));
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.next().unwrap(), Token::Unknown("%".to_string()));
+        let (ln, v) = lex("10 fOr %woo in 0..4 \n");
+        assert_eq!(ln, 10);
+        let mut x = v.iter();
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Word(Word::For));
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Unknown("%".to_string()));
         assert_eq!(
             x.next().unwrap(),
-            Token::Ident(Ident::Plain("WOO".to_string()))
+            &Token::Ident(Ident::Plain("WOO".to_string()))
         );
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
         assert_eq!(
             x.next().unwrap(),
-            Token::Ident(Ident::Plain("IN".to_string()))
+            &Token::Ident(Ident::Plain("IN".to_string()))
         );
-        assert_eq!(x.next().unwrap(), Token::Whitespace(1));
+        assert_eq!(x.next().unwrap(), &Token::Whitespace(1));
         assert_eq!(
             x.next().unwrap(),
-            Token::Literal(Literal::Single("0.".to_string()))
+            &Token::Literal(Literal::Single("0.".to_string()))
         );
         assert_eq!(
             x.next().unwrap(),
-            Token::Literal(Literal::Single(".4".to_string()))
+            &Token::Literal(Literal::Single(".4".to_string()))
         );
         assert_eq!(x.next(), None);
     }
