@@ -1,3 +1,5 @@
+pub use super::ident::Ident;
+
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     Data(Vec<Expression>),
@@ -19,13 +21,4 @@ pub enum Expression {
     Divide(Box<Expression>, Box<Expression>),
     Equality(Box<Expression>, Box<Expression>),
     Exponential(Box<Expression>, Box<Expression>),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Ident {
-    Plain(String),
-    String(String),
-    Single(String),
-    Double(String),
-    Integer(String),
 }

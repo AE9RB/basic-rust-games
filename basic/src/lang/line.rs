@@ -10,7 +10,6 @@ use super::token::*;
 pub struct Line {
     number: u16,
     tokens: Vec<Token>,
-    ast: Option<Result<Vec<Statement>, Error>>,
 }
 
 impl Line {
@@ -19,7 +18,6 @@ impl Line {
         Line {
             tokens: lex.collect(),
             number: lex.line_number(),
-            ast: None,
         }
     }
 
@@ -27,13 +25,8 @@ impl Line {
         self.number == 65535
     }
 
-    pub fn ast(&mut self) -> &Result<Vec<Statement>, Error> {
-        if self.ast.is_some() {
-            self.ast.as_ref().unwrap()
-        } else {
-            self.ast = Some(parse(self.tokens.iter()));
-            self.ast.as_ref().unwrap()
-        }
+    pub fn ast(&mut self) -> Result<Vec<Statement>, Error> {
+        parse(self.tokens.iter())
     }
 }
 

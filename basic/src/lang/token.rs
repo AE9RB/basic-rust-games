@@ -4,6 +4,8 @@ use basic78::EnumIter;
 use std::collections::HashMap;
 use std::fmt;
 
+pub use super::ident::Ident;
+
 thread_local!(
     static STRING_TO_TOKEN: HashMap<std::string::String, Token> = Token::iter()
         .cloned()
@@ -91,7 +93,7 @@ pub enum Word {
     On,
     Print,
     Read,
-    Rem,
+    Rem1,
     Rem2,
     Restore,
     Return,
@@ -119,7 +121,7 @@ impl fmt::Display for Word {
             On => write!(f, "ON"),
             Print => write!(f, "PRINT"),
             Read => write!(f, "READ"),
-            Rem => write!(f, "REM"),
+            Rem1 => write!(f, "REM"),
             Rem2 => write!(f, "'"),
             Restore => write!(f, "RESTORE"),
             Return => write!(f, "RETURN"),
@@ -170,28 +172,6 @@ impl fmt::Display for Operator {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Clone)]
-pub enum Ident {
-    Plain(String),
-    String(String),
-    Single(String),
-    Double(String),
-    Integer(String),
-}
-
-impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Ident::*;
-        match self {
-            Plain(s) => write!(f, "{}", s),
-            String(s) => write!(f, "{}", s),
-            Single(s) => write!(f, "{}", s),
-            Double(s) => write!(f, "{}", s),
-            Integer(s) => write!(f, "{}", s),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,7 +179,7 @@ mod tests {
     #[test]
     fn test_from_string() {
         let t = Token::from_string("REM");
-        assert_eq!(t, Some(Token::Word(Word::Rem)));
+        assert_eq!(t, Some(Token::Word(Word::Rem1)));
         let t = Token::from_string("PICKLES");
         assert_eq!(t, None);
     }

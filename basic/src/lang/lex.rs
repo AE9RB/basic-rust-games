@@ -65,7 +65,7 @@ impl<'a> Iterator for Lex<'a> {
 
         if Self::is_basic_alphabetic(*p) {
             let r = self.alphabetic();
-            if r == Some(Token::Word(Word::Rem)) {
+            if r == Some(Token::Word(Word::Rem1)) {
                 self.remark = true;
             }
             if let Some(p) = self.i.peek() {
@@ -329,7 +329,7 @@ mod tests {
         let mut x = Lex::new(" 100REM A fortunate comment");
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
         assert_eq!(x.line_number(), 100);
-        assert_eq!(x.next().unwrap(), Token::Word(Word::Rem));
+        assert_eq!(x.next().unwrap(), Token::Word(Word::Rem1));
         assert_eq!(
             x.next().unwrap(),
             Token::Unknown(" A fortunate comment".to_string())
