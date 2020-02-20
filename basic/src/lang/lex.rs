@@ -1,7 +1,14 @@
 use super::token::*;
 use std::iter::Peekable;
 
-pub struct Lex<'a> {
+pub fn lex(s: &str) -> (u16, Vec<Token>) {
+    let l = &mut Lex::new(s);
+    let t = l.collect::<Vec<Token>>();
+    let n = l.line_number;
+    (n, t)
+}
+
+struct Lex<'a> {
     i: Peekable<std::iter::Take<std::str::Chars<'a>>>,
     line_number: u16,
     remark: bool,
@@ -89,7 +96,7 @@ impl<'a> Iterator for Lex<'a> {
 }
 
 impl<'a> Lex<'a> {
-    pub fn new(s: &'a str) -> Lex {
+    fn new(s: &'a str) -> Lex {
         let mut t = s.len();
         if s.ends_with("\r\n") {
             t -= 2
@@ -105,11 +112,6 @@ impl<'a> Lex<'a> {
             starting: true,
             next_token: None,
         }
-    }
-
-    pub fn line_number(&mut self) -> u16 {
-        debug_assert!(!self.starting, "Not valid until started");
-        self.line_number
     }
 
     fn is_basic_whitespace(c: char) -> bool {
@@ -328,7 +330,7 @@ mod tests {
     fn test_remark() {
         let mut x = Lex::new(" 100REM A fortunate comment");
         assert_eq!(x.next().unwrap(), Token::Whitespace(1));
-        assert_eq!(x.line_number(), 100);
+        assert_eq!(x.line_number, 100);
         assert_eq!(x.next().unwrap(), Token::Word(Word::Rem1));
         assert_eq!(
             x.next().unwrap(),
@@ -344,7 +346,7 @@ mod tests {
         assert_eq!(x.next().unwrap(), Token::Word(Word::Rem2));
         assert_eq!(x.next().unwrap(), Token::Unknown("The comment".to_string()));
         assert_eq!(x.next(), None);
-        assert_eq!(x.line_number(), 100);
+        assert_eq!(x.line_number, 100);
     }
 
     #[test]

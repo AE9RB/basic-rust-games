@@ -51,7 +51,8 @@ mod tests {
     use super::*;
 
     fn parse_str(s: &str) -> Result {
-        parse(Lex::new(s).collect::<Vec<Token>>().iter())
+        let (_, tokens) = lex(s);
+        parse(tokens.iter())
     }
 
     #[test]

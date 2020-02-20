@@ -14,10 +14,10 @@ pub struct Line {
 
 impl Line {
     pub fn from_str(s: &str) -> Line {
-        let lex = &mut Lex::new(s);
+        let (line_number, tokens) = lex(s);
         Line {
-            tokens: lex.collect(),
-            number: lex.line_number(),
+            tokens: tokens,
+            number: line_number,
         }
     }
 
