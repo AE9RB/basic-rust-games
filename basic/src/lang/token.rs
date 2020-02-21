@@ -1,10 +1,8 @@
 extern crate basic78;
+pub use super::ident::Ident;
 use basic78::EnumIter;
 
 use std::collections::HashMap;
-use std::fmt;
-
-pub use super::ident::Ident;
 
 thread_local!(
     static STRING_TO_TOKEN: HashMap<std::string::String, Token> = Token::iter()
@@ -15,7 +13,7 @@ thread_local!(
         .collect();
 );
 
-#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Clone, EnumIter)]
 pub enum Token {
     Unknown(String),
     Whitespace(usize),
@@ -38,8 +36,8 @@ impl Token {
     }
 }
 
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Token::*;
         match self {
             Unknown(s) => write!(f, "{}", s),
@@ -56,7 +54,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Literal {
     Single(String),
     Double(String),
@@ -64,8 +62,8 @@ pub enum Literal {
     String(String),
 }
 
-impl fmt::Display for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Literal::*;
         match self {
             Single(s) => write!(f, "{}", s),
@@ -76,7 +74,7 @@ impl fmt::Display for Literal {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Clone, EnumIter)]
 pub enum Word {
     Data,
     Def,
@@ -85,13 +83,15 @@ pub enum Word {
     End,
     For,
     GoSub,
-    GoTo,
+    Goto1,
+    Goto2,
     If,
     Input,
     Let,
     Next,
     On,
-    Print,
+    Print1,
+    Print2,
     Read,
     Rem1,
     Rem2,
@@ -102,8 +102,8 @@ pub enum Word {
     To,
 }
 
-impl fmt::Display for Word {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Word {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Word::*;
         match self {
             Data => write!(f, "DATA"),
@@ -113,13 +113,15 @@ impl fmt::Display for Word {
             End => write!(f, "END"),
             For => write!(f, "FOR"),
             GoSub => write!(f, "GOSUB"),
-            GoTo => write!(f, "GOTO"),
+            Goto1 => write!(f, "GOTO"),
+            Goto2 => write!(f, "GO TO"),
             If => write!(f, "IF"),
             Input => write!(f, "INPUT"),
             Let => write!(f, "LET"),
             Next => write!(f, "NEXT"),
             On => write!(f, "ON"),
-            Print => write!(f, "PRINT"),
+            Print1 => write!(f, "PRINT"),
+            Print2 => write!(f, "?"),
             Read => write!(f, "READ"),
             Rem1 => write!(f, "REM"),
             Rem2 => write!(f, "'"),
@@ -132,7 +134,7 @@ impl fmt::Display for Word {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Clone, EnumIter)]
 pub enum Operator {
     Equals,
     Plus,
@@ -150,8 +152,8 @@ pub enum Operator {
     Imp,
 }
 
-impl fmt::Display for Operator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Operator::*;
         match self {
             Equals => write!(f, "="),

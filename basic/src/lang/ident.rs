@@ -1,5 +1,3 @@
-use std::fmt;
-
 // Used in both Token and Ast
 
 #[derive(Debug, PartialEq, Hash, Clone)]
@@ -11,8 +9,8 @@ pub enum Ident {
     Integer(String),
 }
 
-impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Ident {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Ident::*;
         match self {
             Plain(s) => write!(f, "{}", s),

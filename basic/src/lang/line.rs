@@ -1,5 +1,3 @@
-use std::fmt;
-
 use super::ast::*;
 use super::error::*;
 use super::lex::*;
@@ -8,7 +6,7 @@ use super::token::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Line {
-    number: u16,
+    number: Option<u16>,
     tokens: Vec<Token>,
 }
 
@@ -21,22 +19,18 @@ impl Line {
         }
     }
 
-    pub fn is_direct(&self) -> bool {
-        self.number == 65535
-    }
-
     pub fn ast(&mut self) -> Result<Vec<Statement>, Error> {
         parse(self.tokens.iter())
     }
 }
 
-impl fmt::Display for Line {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Line {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let s: String = self.tokens.iter().map(|s| s.to_string()).collect();
-        if self.is_direct() {
-            write!(f, "{}", s)
+        if self.number.is_some() {
+            write!(f, "{} {}", self.number.unwrap(), s)
         } else {
-            write!(f, "{}{}", self.number, s)
+            write!(f, "{}", s)
         }
     }
 }

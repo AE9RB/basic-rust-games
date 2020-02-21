@@ -1,11 +1,8 @@
-use std::fmt;
-
 #[derive(Debug, PartialEq)]
 pub struct Error {
     code: u16,
-    line: u16,
-    col_start: usize,
-    col_end: usize,
+    line: Option<u16>,
+    columns: Option<std::ops::Range<usize>>,
 }
 
 macro_rules! error {
@@ -20,10 +17,20 @@ impl Error {
     pub fn from_code(code: ErrorCode) -> Error {
         Error {
             code: code as u16,
-            line: 65535,
-            col_start: 0,
-            col_end: 0,
+            line: None,
+            columns: None,
         }
+    }
+
+    pub fn var_err(&self) -> u16 {
+        self.code
+    }
+
+    pub fn var_erl(&self) -> u16 {
+        if self.line.is_none() {
+            return 65535;
+        }
+        return self.line.unwrap();
     }
 }
 
@@ -32,8 +39,8 @@ pub enum ErrorCode {
     SyntaxError = 2,
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let s = match self.code {
             1 => "NEXT WITHOUT FOR",
             2 => "SYNTAX ERROR",
