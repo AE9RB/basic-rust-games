@@ -26,14 +26,12 @@ pub fn lex(s: &str) -> (Option<u16>, Vec<Token>) {
 fn collapse_go_to(t: &mut Vec<Token>) {
     let mut ins: Vec<usize> = vec![];
     for (i, ttt) in t.windows(3).enumerate() {
-        if ttt
-            == [
-                Token::Ident(Ident::Plain("GO".to_string())),
-                Token::Whitespace(1),
-                Token::Word(Word::To),
-            ]
-        {
-            ins.push(i);
+        if ttt[0] == Token::Ident(Ident::Plain("GO".to_string())) {
+            if let Token::Whitespace(_) = ttt[1] {
+                if ttt[2] == Token::Word(Word::To) {
+                    ins.push(i);
+                }
+            }
         }
     }
     while let Some(i) = ins.pop() {
