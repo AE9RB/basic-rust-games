@@ -1,6 +1,6 @@
-extern crate basic78;
+extern crate macros;
 pub use super::ident::Ident;
-use basic78::EnumIter;
+use macros::EnumIter;
 
 use std::collections::HashMap;
 
@@ -82,7 +82,8 @@ pub enum Word {
     Else,
     End,
     For,
-    GoSub,
+    Gosub1,
+    Gosub2,
     Goto1,
     Goto2,
     If,
@@ -112,7 +113,8 @@ impl std::fmt::Display for Word {
             Else => write!(f, "ELSE"),
             End => write!(f, "END"),
             For => write!(f, "FOR"),
-            GoSub => write!(f, "GOSUB"),
+            Gosub1 => write!(f, "GOSUB"),
+            Gosub2 => write!(f, "GO SUB"),
             Goto1 => write!(f, "GOTO"),
             Goto2 => write!(f, "GO TO"),
             If => write!(f, "IF"),

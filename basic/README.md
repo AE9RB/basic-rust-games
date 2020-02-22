@@ -1,18 +1,26 @@
-# BASIC-78
+# BASIC
 
-An implementation of BASIC which probably meets the qualifications
-set forth in ANSI X3.60-1978. I don't have this document.
-Despite being superseded and revoked, it's expensive to obtain.
-Fortunately, the goal here isn't to create a certified implementation.
+The BASIC programming language as it was in 1978.\
+See https://en.wikipedia.org/wiki/Microsoft_BASIC
 
-This was created to run programs from the microcomputer editions of
-BASIC Computer Games and More BASIC Computer Games.
-Every program in those books will run on Microsoft BASIC 4 and 5.
-Every program in those books will also run on BASIC-78.
+```
+READY.
+10 FOR I=1 TO 2
+20 PRINT "Hello World"
+30 NEXT I
+RUN
+Hello World
+Hello World
+READY.
+```
 
-## Quick summary of Differences from Microsoft/ANSI BASIC
+Future versions of BASIC introduced structure and required
+or included a text editor. This project is a historical
+preservation of BASIC just before then. A time when most
+people were learning about computers by typing in BASIC
+programs published in books and magazines.
 
- * Input is readline. To edit a line, type the line number then TAB.
- * Supports UTF-8 in REM statements and strings.
- * String LEN returns the number of characters, not the number of graphemes or bytes.
- * Files always save and load UTF-8. Tokenized and protected formats not available.
+The first computer book to sell one million copies was a
+collection of BASIC Computer Games. It was followed up with
+More BASIC Computer Games. You can run all those and more
+with this dialect of BASIC.

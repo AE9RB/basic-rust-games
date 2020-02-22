@@ -1,3 +1,8 @@
+//! # BASIC
+//!
+//! The BASIC programming language as it was in 1978.
+//!
+
 mod lang;
 use lang::line::*;
 

@@ -15,7 +15,7 @@ pub fn lex(s: &str) -> (Option<u16>, Vec<Token>) {
     let mut t = l.collect::<Vec<Token>>();
     let line_number = take_line_number(&mut t);
     trim_end(&mut t);
-    collapse_go_to(&mut t);
+    collapse_go(&mut t);
     if line_number.is_some() {
         separate_words(&mut t);
         upgrade_tokens(&mut t);
@@ -23,20 +23,23 @@ pub fn lex(s: &str) -> (Option<u16>, Vec<Token>) {
     (line_number, t)
 }
 
-fn collapse_go_to(t: &mut Vec<Token>) {
-    let mut ins: Vec<usize> = vec![];
+fn collapse_go(t: &mut Vec<Token>) {
+    let mut ins: Vec<(usize, Token)> = vec![];
     for (i, ttt) in t.windows(3).enumerate() {
         if ttt[0] == Token::Ident(Ident::Plain("GO".to_string())) {
             if let Token::Whitespace(_) = ttt[1] {
                 if ttt[2] == Token::Word(Word::To) {
-                    ins.push(i);
+                    ins.push((i, Token::Word(Word::Goto2)));
+                }
+                if ttt[2] == Token::Ident(Ident::Plain("SUB".to_string())) {
+                    ins.push((i, Token::Word(Word::Gosub2)));
                 }
             }
         }
     }
-    while let Some(i) = ins.pop() {
+    while let Some((i, ttt)) = ins.pop() {
         t.drain(i..i + 3);
-        t.insert(i, Token::Word(Word::Goto2));
+        t.insert(i, ttt);
     }
 }
 
@@ -45,6 +48,7 @@ fn upgrade_tokens(t: &mut Vec<Token>) {
         let r = match t[i] {
             Token::Word(Word::Print2) => Some(Token::Word(Word::Print1)),
             Token::Word(Word::Goto2) => Some(Token::Word(Word::Goto1)),
+            Token::Word(Word::Gosub2) => Some(Token::Word(Word::Gosub1)),
             _ => None,
         };
         if r.is_some() {
@@ -364,6 +368,11 @@ mod tests {
     #[test]
     fn test_go_to2() {
         assert_eq!(token("GO TO"), Token::Word(Word::Goto2));
+    }
+
+    #[test]
+    fn test_go_sub2() {
+        assert_eq!(token("GO SUB"), Token::Word(Word::Gosub2));
     }
 
     #[test]
