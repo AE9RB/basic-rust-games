@@ -1,5 +1,6 @@
 theme: jekyll-theme-tactile
 github:
+  public: true
   is_project_page: true
 show_downloads: true
 download:
