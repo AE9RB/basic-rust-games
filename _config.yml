@@ -1,1 +1,5 @@
 theme: jekyll-theme-tactile
+show_downloads: true
+download:
+  windows: http://example.com/download.zip
+  macos: another value
