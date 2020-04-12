@@ -4,5 +4,5 @@ github:
   is_project_page: true
 show_downloads: true
 download:
-  windows: http://example.com/download.zip
-  macos: another value
+  windows: https://github.com/AE9RB/basic-lang/releases/download/0.5.0/basic-win64.zip
+  macos: https://github.com/AE9RB/basic-lang/releases/download/0.5.0/basic-macos.zip
