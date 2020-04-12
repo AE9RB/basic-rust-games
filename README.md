@@ -17,4 +17,4 @@ contains many programs that can be automatically downloaded and patched.
 
 [The manual](https://github.com/AE9RB/basic-lang/tree/master/patch)
 includes a BASIC tutorial and documents every type, statement,
-operation, and function.
+operation, and function of the 64K BASIC dialect.
