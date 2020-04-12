@@ -1,22 +1,20 @@
-# Basic Rust Games
+```
+64K BASIC
+READY.
+█
+```
 
-The first computer book to sell a million copies was a collection of games
-published in the 1970s. The programs were originally for early minicomputers
-such as the PDP-8. Then the microcomputer revolution started with the Altair
-8800. Soon we saw computers from Apple, Tandy, TI, Sinclair, BBC, Atari,
-Commodore, and more. All these new computers came with the BASIC programming
-language.
+## Installation
 
-Millions of people learned to program with 101 BASIC Computer Games,
-BASIC Computer Games and More BASIC Computer Games. This collection of
-Rust games is a tribute to that era. It is also a practical way to begin
-learning computer science or the Rust language.
+Windows and MacOS binaries are linked above.\
+Linux requires [Rust](https://www.rust-lang.org/tools/install) then
+the command `cargo install basic-lang`.
 
-All of these games are console games. No mouse. No graphics. No distractions.
+## Getting Started
 
-## Prerequisites
+[The patch repository](https://github.com/AE9RB/basic-lang/tree/master/patch)
+contains many programs that can be automatically downloaded and patched.
 
-Rust. Any platform. Any editor. Any console.
-If you can run "Hello World!" then you are good to go.
-<br/>https://www.rust-lang.org/learn/get-started
-<br/>https://en.wikipedia.org/wiki/%22Hello,_World!%22_program
+[The manual](https://github.com/AE9RB/basic-lang/tree/master/patch)
+includes a BASIC tutorial and documents every type, statement,
+operation, and function.
