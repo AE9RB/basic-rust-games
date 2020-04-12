@@ -1,7 +1,6 @@
 theme: jekyll-theme-tactile
-site:
-  title: 64K BASIC
-  description: The BASIC programming language as it was in the beginning.
+title: 64K BASIC
+description: The BASIC programming language as it was in the beginning.
 github:
   public: true
   is_project_page: true
